@@ -752,6 +752,7 @@ function spawnBot() {
     let color;
     const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
     if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
+    
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         const counts = teams.map(c => ({
             color: c, 
@@ -764,20 +765,34 @@ function spawnBot() {
 
     let x, y;
     const margin = 300;
-    if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+
+    if (gameMode === 'TEAMS') {
+        // 2 TEAMS Logic: Restrict X to sides, but allow any Y
+        y = Math.random() * ARENA_SIZE;
+        if (color === TEAM_COLORS.BLUE) {
+            x = margin;
+        } else {
+            x = ARENA_SIZE - margin;
+        }
+        // Small horizontal jitter so they aren't in a perfect vertical line
+        x += (Math.random() - 0.5) * 100;
+
+    } else if (gameMode === '4TEAMS') {
+        // 4 TEAMS Logic: Keep original corner spawning
         if (color === TEAM_COLORS.BLUE) { x = margin; y = margin; }
         else if (color === TEAM_COLORS.RED) { x = ARENA_SIZE - margin; y = ARENA_SIZE - margin; }
         else if (color === TEAM_COLORS.GREEN) { x = margin; y = ARENA_SIZE - margin; }
         else if (color === TEAM_COLORS.YELLOW) { x = ARENA_SIZE - margin; y = margin; }
-        // Add random jitter to spawn
+        
         x += (Math.random() - 0.5) * 200;
         y += (Math.random() - 0.5) * 200;
+
     } else {
+        // FFA Logic
         x = Math.random() * ARENA_SIZE;
         y = Math.random() * ARENA_SIZE;
     }
 
-    // Pick name based on region
     const regionPool = REGION_NAMES[selectedRegion] || REGION_NAMES['frankfurt'];
     const botName = regionPool[Math.floor(Math.random() * regionPool.length)];
 
