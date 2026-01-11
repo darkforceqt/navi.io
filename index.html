@@ -676,7 +676,9 @@ function startGame() {
 
     // 2. Setup Player Positioning and Color
     let startX, startY, pColor;
-   if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+    const margin = 300;
+
+    if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
         if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
         
@@ -687,14 +689,25 @@ function startGame() {
         }));
         pColor = counts.sort((a, b) => a.count - b.count)[0].color;
         
-        // Corner Logic
-        const margin = 300;
-        if (pColor === TEAM_COLORS.BLUE) { startX = margin; startY = margin; }
-        else if (pColor === TEAM_COLORS.RED) { startX = ARENA_SIZE - margin; startY = ARENA_SIZE - margin; }
-        else if (pColor === TEAM_COLORS.GREEN) { startX = margin; startY = ARENA_SIZE - margin; }
-        else if (pColor === TEAM_COLORS.YELLOW) { startX = ARENA_SIZE - margin; startY = margin; }
+        // Team Spawning Logic
+        if (gameMode === 'TEAMS') {
+            // 2 TEAMS: Random Y position along the X-threshold
+            startY = Math.random() * ARENA_SIZE;
+            if (pColor === TEAM_COLORS.BLUE) { 
+                startX = margin; 
+            } else { 
+                startX = ARENA_SIZE - margin; 
+            }
+        } else {
+            // 4 TEAMS: Corner Logic
+            if (pColor === TEAM_COLORS.BLUE) { startX = margin; startY = margin; }
+            else if (pColor === TEAM_COLORS.RED) { startX = ARENA_SIZE - margin; startY = ARENA_SIZE - margin; }
+            else if (pColor === TEAM_COLORS.GREEN) { startX = margin; startY = ARENA_SIZE - margin; }
+            else if (pColor === TEAM_COLORS.YELLOW) { startX = ARENA_SIZE - margin; startY = margin; }
+        }
         
     } else {
+        // FFA Logic
         pColor = '#00b2e1';
         startX = Math.random() * ARENA_SIZE; 
         startY = Math.random() * ARENA_SIZE;
@@ -715,7 +728,7 @@ function startGame() {
     kills = 0;
     gameState = 'PLAYING';
     gameStartTime = Date.now();
-    lastTime = performance.now(); // Reset delta-time anchor
+    lastTime = performance.now(); 
 
     // 5. Update UI
     document.getElementById('menu-screen').style.display = 'none';
@@ -729,13 +742,12 @@ function startGame() {
     // 7. Calculate and Spawn Bots based on Region Population
     let baseBotCount = 24;
     if (selectedRegion === 'tokyo') {
-        baseBotCount = Math.floor(baseBotCount * 0.8); // 20% less
+        baseBotCount = Math.floor(baseBotCount * 0.8);
     } else if (selectedRegion === 'sydney') {
-        baseBotCount = Math.floor(baseBotCount * 0.3); // 70% less
-    }else if (selectedRegion === 'atlanta') {
-        baseBotCount = Math.floor(baseBotCount * 1.5); // 50% more
+        baseBotCount = Math.floor(baseBotCount * 0.3);
+    } else if (selectedRegion === 'atlanta') {
+        baseBotCount = Math.floor(baseBotCount * 1.5);
     }
-    
     
     for(let i=0; i < baseBotCount; i++) {
         spawnBot();
