@@ -1,0 +1,1282 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <title data-id="th-modified">File</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #b0b0b0; font-family: 'Ubuntu', sans-serif; user-select: none; touch-action: none; }
+        canvas { display: block; background-color: #cdcdcd; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #menu-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
+        #death-screen { display: none; position: absolute; inset: 0; background: rgba(40, 0, 0, 0.85); backdrop-filter: blur(5px); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; color: white; text-align: center; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .mode-btn { padding: 8px 15px; cursor: pointer; background: #555; color: white; border: 2px solid #333; border-radius: 4px; }
+        .mode-btn.active { background: #00b2e1; border-color: #fff; }
+        #evolution-menu { position: absolute; top: 20px; left: 20px; display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .evo-btn { background: #00b2e1; color: white; border: 3px solid #0085a8; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; text-align: center; width: 120px; }
+        #upgrades { position: absolute; bottom: 80px; left: 20px; pointer-events: auto; }
+        .stat-row { display: flex; background: rgba(0,0,0,0.3); margin: 2px; padding: 2px 8px; border-radius: 4px; cursor: pointer; width: 220px; }
+        .stat-bar { display: flex; flex-grow: 1; gap: 2px; align-items: center; margin-left: 5px; }
+        .stat-seg { height: 10px; flex: 1; background: rgba(255,255,255,0.2); border-radius: 1px; }
+        .hidden { display: none; }
+        #hud-bottom { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 400px; display: flex; flex-direction: column; align-items: center; }
+        .progress-container { width: 100%; height: 16px; background: #555; border: 2px solid #333; border-radius: 8px; overflow: hidden; margin-top: 5px;}
+        #xp-bar { height: 100%; width: 0%; background: #ffe869; transition: width 0.2s; }
+        #leaderboard { position: absolute; top: 20px; right: 20px; color: white; text-align: right; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; min-width: 170px; font-size: 14px; }
+        #minimap { position: absolute; bottom: 20px; right: 20px; width: 150px; height: 150px; background: rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.3); }
+        
+        #mobile-controls { position: absolute; inset: 0; pointer-events: none; display: none; }
+        #joystick-base { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
+        #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; }
+        #mobile-fire { position: absolute; bottom: 60px; right: 180px; width: 80px; height: 80px; background: rgba(255,0,0,0.3); border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
+/* Add to your <style> section */
+#death-screen canvas {
+    background: transparent;
+    margin: 20px 0;
+}
+#death-stats {
+    font-size: 18px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+.menu-card {
+    background: rgba(15, 15, 15, 0.85);
+    padding: 32px 36px;
+    border-radius: 14px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.game-title {
+    color: white;
+    font-size: 46px;
+    margin: 0 0 10px;
+    text-align: center;
+}
+
+.menu-input,
+.menu-select {
+    padding: 12px;
+    font-size: 15px;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    background: #1f1f1f;
+    color: white;
+}
+
+.menu-select {
+    cursor: pointer;
+    border: 1px solid #444;
+}
+
+.spawn-btn {
+    display: none; 
+    margin-top: 10px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #00b2e1, #007ea6);
+    color: white;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.show-button {
+    display: block !important;
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.spawn-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,178,225,0.45);
+}
+
+.menu-footer {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #aaa;
+    display: flex;
+    justify-content: space-between;
+}
+.death-card {
+    background: rgba(20, 0, 0, 0.85);
+    padding: 30px 40px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+}
+
+.death-title {
+    font-size: 42px;
+    margin-bottom: 10px;
+    color: #ff6b6b;
+}
+
+#death-stats {
+    font-size: 16px;
+    line-height: 1.7;
+    margin: 18px 0;
+}
+
+.death-buttons {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+}
+
+.death-btn {
+    padding: 12px 28px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: #444;
+    color: white;
+    font-weight: bold;
+}
+
+.death-btn.primary {
+    background: #00b2e1;
+}
+.custom-select {
+    position: relative;
+    width: 316px; /* Match your menu width */
+    background: #1f1f1f;
+    border: 1px solid #444;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: sans-serif;
+    color: white;
+}
+
+.select-trigger {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.flag-circle {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 1px solid #555;
+}
+
+.custom-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1f1f1f;
+    border: 1px solid #444;
+    z-index: 100;
+}
+
+.custom-select.open .custom-options {
+    display: block;
+}
+
+.custom-option {
+    padding: 10px;
+    display: flex;
+    align-items: left;
+}
+
+.custom-option:hover {
+    background: #333;
+}
+        @media (max-width: 1024px) { #mobile-controls { display: block; } }
+    </style>
+    <style>
+    /* Unified Custom Dropdown Styles */
+    .custom-select {
+        position: relative;
+        width: 100%;
+        background: #1f1f1f;
+        /*border: 1px solid #444;*/
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: 'Ubuntu', sans-serif;
+        color: white;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+
+    .select-trigger {
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .select-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+    }
+
+    .icon-circle {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: contain;
+        background: rgba(255,255,255,0.05);
+        opacity: 1;
+    }
+
+    .custom-options {
+        display: none;
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        background: #1f1f1f;
+        border: 1px solid #444;
+        border-radius: 6px;
+        z-index: 100;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        overflow: hidden;
+    }
+
+    .custom-select.open .custom-options { display: block; }
+
+    .custom-option {
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: background 0.2s;
+    }
+
+    .custom-option:hover { background: #333; }
+
+    /* Gamemode Specific Colors */
+    .mode-ffa { color: #48bfe0; }     /* Blue */
+    .mode-teams { color: #73c176; }   /* Green */
+    .mode-4teams { color: #f47272; }  /* Red */
+    .mode-maze { color: #fef7b8; }    /* Yellow */
+
+    .arrow {
+        border: solid #888;
+        border-width: 0 2px 2px 0;
+        display: inline-block;
+        padding: 3px;
+        transform: rotate(45deg);
+        transition: transform 0.3s;
+    }
+    .custom-select.open .arrow { transform: rotate(-135deg); }
+</style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async="" defer=""></script>
+<meta property="og:title" content="File" data-id="th-modified"><meta name="description" content="game" data-id="th-modified"><meta property="og:description" content="game" data-id="th-modified"><meta property="og:image" content="https://tiiny.host/assets/logo-purple-bg.png" data-id="th-modified"><meta property="og:url" content="https://navi.tiiny.site/" data-id="th-modified"><meta property="og:type" content="website" data-id="th-modified"></head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="ui-layer">
+   <div id="menu-screen">
+    <div class="menu-card">
+        <h1 class="game-title">Navi.io</h1>
+
+        <div class="custom-select" id="modeDropdown">
+            <div class="select-trigger">
+                <div class="select-label mode-ffa">
+                    <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/1c870681-11bb-4c90-900e-5c18754515e7_removalai_pre-imagetourl.cloud-1768148700905-17lsrr.png" class="icon-circle">
+                    <span>Free For All</span>
+                </div>
+                <i class="arrow"></i>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option mode-ffa" data-value="FFA">
+                    <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/1c870681-11bb-4c90-900e-5c18754515e7_removalai_pre-imagetourl.cloud-1768148700905-17lsrr.png" class="icon-circle"> Free For All
+                </div>
+                <div class="custom-option mode-teams" data-value="TEAMS">
+                    <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/4b8607b9-7e7e-4c88-a4ee-b7ce7d3e31db_removalai_pre-imagetourl.cloud-1768148757297-svh582.png" class="icon-circle"> 2 Teams
+                </div>
+                <div class="custom-option mode-4teams" data-value="4TEAMS">
+                    <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/50f41083-094b-43fa-ab7f-b950826300bb_removalai_pre-imagetourl.cloud-1768148801169-ap01m4.png" class="icon-circle"> 4 Teams
+                </div>
+                <div class="custom-option mode-maze" data-value="MAZE">
+                    <img src="https://pub-141831e61e69445289222976a15b6fb3.r2.dev/Image_to_url_V2/1aadf9de-4c6c-47c6-98ee-bd7f6d0116c7_removalai_pre-imagetourl.cloud-1768148856065-o6nvwn.png" class="icon-circle"> Maze
+                </div>
+            </div>
+            <input type="hidden" id="modeSelect" value="FFA">
+        </div>
+
+        <div class="custom-select" id="customRegionSelect">
+            <div class="select-trigger">
+                <div class="select-label">
+                    <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle">
+                    <span>Frankfurt</span>
+                </div>
+                <i class="arrow"></i>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option" data-value="frankfurt">
+                    <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle"> Frankfurt
+                </div>
+                <div class="custom-option" data-value="atlanta">
+                    <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="icon-circle"> Atlanta
+                </div>
+                <div class="custom-option" data-value="hongkong">
+                    <img src="https://image2url.com/r2/bucket1/images/1768042824933-37209d5d-6f47-4821-9d30-ea154cb06781.png" class="icon-circle"> Hong Kong
+                </div>
+            </div>
+            <input type="hidden" id="regionSelect" value="frankfurt">
+        </div>
+
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="16" class="menu-input">
+        <button class="spawn-btn" onclick="startGame()">Spawn</button>
+        <div class="cf-turnstile" 
+            data-sitekey="0x4AAAAAACL3tHxKP9xDWcuv" 
+            data-callback="onTurnstileSuccess">
+        </div>
+        <div class="menu-footer">
+            <span>WASD / Mouse</span>
+            <span>E = Autofire · C = Autospin</span>
+        </div>
+    </div>
+</div>
+    <div class="custom-options">
+    <div class="custom-option" data-value="frankfurt">
+        <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="flag-circle"> Frankfurt
+    </div>
+    <div class="custom-option" data-value="atlanta">
+        <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="flag-circle"> Atlanta
+    </div>
+    <div class="custom-option" data-value="hongkong">
+        <img src="https://image2url.com/r2/bucket1/images/1768042824933-37209d5d-6f47-4821-9d30-ea154cb06781.png" class="flag-circle"> Hong Kong
+    </div>
+    <div class="custom-option" data-value="tokyo">
+        <img src="https://image2url.com/r2/bucket2/images/1768064708827-01ceabb9-42d2-42d3-abe7-c06e4e59b7b3.png" class="flag-circle"> Tokyo
+    </div>
+    <div class="custom-option" data-value="sydney">
+        <img src="https://image2url.com/r2/bucket2/images/1768064762420-ae8ca948-7c89-4f46-9176-06baef3c111b.png" class="flag-circle"> Sydney
+    </div>
+</div>
+    <input type="hidden" id="regionSelect" value="frankfurt">
+</div>
+
+        
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="16" class="menu-input">
+
+        <button class="spawn-btn" onclick="startGame()">Spawn</button>
+
+        <div class="menu-footer">
+            <span>WASD / Mouse</span>
+            <span>E = Autofire · C = Autospin</span>
+        </div>
+    
+
+
+      <div id="death-screen">
+    <div class="death-card">
+        <h1 class="death-title">Destroyed</h1>
+
+        <canvas id="deathTankCanvas" width="140" height="140"></canvas>
+
+        <div id="death-stats"></div>
+
+        <div class="death-buttons">
+            <button class="death-btn primary" onclick="startGame()">Play Again</button>
+            <button class="death-btn" onclick="resetToMenu()">Menu</button>
+        </div>
+    </div>
+</div>
+<button onclick="resetToMenu()" style="padding:12px 40px; cursor:pointer; background:#555; color:white; border-radius:4px;">Continue</button>
+        <div id="evolution-menu"></div>
+        <div id="upgrades" class="hidden"><div style="color: #ffeb3b; font-size: 14px; font-weight:bold;">Points: <span id="pt-count">0</span></div><div id="stat-list"></div></div>
+        <div id="leaderboard"></div>
+        <div id="hud-bottom"><div id="tank-name-display" style="color:white; font-weight:bold;"></div><div class="progress-container"><div id="xp-bar"></div></div><div id="lvl-txt" style="color:white; font-size:12px;">Level 1</div></div>
+        <div id="minimap"><canvas id="minimapCanvas" width="150" height="150"></canvas></div>
+        <div id="mobile-controls">
+            <div id="joystick-base"><div id="joystick-stick"></div></div>
+            <div id="mobile-fire"></div>
+        </div>
+    
+
+<script>
+    function onTurnstileSuccess(token) {
+    // 1. Wait 1 second after "Success!" appears
+    setTimeout(() => {
+        const turnstileWidget = document.querySelector('.cf-turnstile');
+        const spawnBtn = document.querySelector('.spawn-btn');
+
+        // 2. Hide the Turnstile widget
+        if (turnstileWidget) {
+            turnstileWidget.style.display = 'none';
+        }
+
+        // 3. Show the Spawn button
+        if (spawnBtn) {
+            spawnBtn.classList.add('show-button');
+        }
+        
+        console.log("Verification successful. Spawn button enabled.");
+    }, 1000);
+}
+function setupCustomDropdown(containerId) {
+    const container = document.getElementById(containerId);
+    const trigger = container.querySelector('.select-trigger');
+    const options = container.querySelectorAll('.custom-option');
+    const hiddenInput = container.querySelector('input[type="hidden"]');
+    const label = container.querySelector('.select-label');
+
+    // Toggle open
+    trigger.addEventListener('click', (e) => {
+        // Close others
+        document.querySelectorAll('.custom-select').forEach(s => {
+            if(s !== container) s.classList.remove('open');
+        });
+        container.classList.toggle('open');
+        e.stopPropagation();
+    });
+
+    // Handle selection
+    options.forEach(opt => {
+        opt.addEventListener('click', () => {
+            const val = opt.dataset.value;
+            const content = opt.innerHTML;
+            const className = opt.className;
+
+            hiddenInput.value = val;
+            label.innerHTML = content;
+            label.className = className.replace('custom-option', 'select-label');
+            
+            container.classList.remove('open');
+        });
+    });
+}
+
+// Initialize both
+setupCustomDropdown('modeDropdown');
+setupCustomDropdown('customRegionSelect');
+
+// Close when clicking outside
+window.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
+});
+
+// Close dropdown if clicking outside
+window.addEventListener('click', (e) => {
+    if (!customSelect.contains(e.target)) {
+        customSelect.classList.remove('open');
+    }
+});
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const mCanvas = document.getElementById('minimapCanvas');
+const mctx = mCanvas.getContext('2d');
+const ARENA_SIZE = 4500;
+const REGION_NAMES = {
+    frankfurt: [
+        // Turkish
+        "Arda", "Enes", "Demir", "Can", "Yusuf", "Turkiye", "TURK", "CCc", "Osmanli", "Reis", "Bordo Bereli", "Efe", "Mert", "Baris", "Kaan", "Gokhan", "Emre", "Yasin", "Omer", "Ataturk", "Ay Yildiz", "Kebab Lord", "TR-Player", "Sultan", "Mehmet", "Fatih", "Azrail", "Bozkurt", "Yavuz", "Selim", "Selo", "Hakan", "Ibrahim", "Mustafa", "Kartal", "Aslan", "Cimbom", "Fener", "Besiktas", "Trabzon", "Efendi", "Pasa", "Deli", "Kara", "Ak", "Kirmizi", "Beyaz", "Vatan", "Bayrak", "Yigit",
+        // French
+        "Jean", "Luc", "Pierre", "Mathis", "FRANCE", "Baguette", "Le Roi", "L’Empereur", "Hugo", "Lucas", "Enzo", "Nathan", "Thomas", "Louis", "Arthur", "Gabriel", "Jules", "Zizou", "Napoléon", "Parisien", "Lyon", "Marseille", "Vive La France", "Oui Oui", "Mdr", "Ptdr", "Wsh", "Frero", "Griezmann", "Mbappe", "Zidane", "L’unite", "Soleil", "Lune", "Noir", "Blanc", "Bleu", "Rouge", "Vitesse", "Force", "Honneur", "Fraternite", "Liberté", "Egalité", "Fromage", "Croissant", "Tonton", "Zbeub", "Poto", "C’est la vie",
+        // Polish
+        "Kuba", "Mateusz", "Piotr", "Marek", "POLSKA", "Kacper", "Filip", "Michał", "Szymon", "Antoni", "Janek", "Wojtek", "Siema", "Kurwa", "Elo", "Byku", "Krol", "Zamek", "Husaria", "Lewandowski", "Pudzian", "Robert", "Dawid", "Kamil", "GamerPL", "PL_Pro", "Warszawa", "Krakow", "Zurek", "Pierogi", "Boczek", "Smok", "Orzeł", "Bialy", "Czerwony", "Mocny", "Szybki", "Zly", "Dziadek", "Wujek", "Młody", "Stary", "Rycerz", "Zwiadowca", "Wilk", "Niedźwiedź", "Ryba", "Woda", "Ogień", "Ziemia",
+        // English/Generic
+        "shadow", "hunter", "Ace", "Novaa", "United Kingdom", "London", "Ghost", "Sniper", "Wolf", "King", "God", "Demon", "Slayer", "Warrior", "Legend", "Pro", "Noob", "toxic", "salty", "chill", "vibe", "EU_Player", "Global", "Elite", "Titan", "Raptor", "Dragon", "Storm", "Frost", "Flame", "Chaos", "Order", "Victory", "Defeat", "Revenge", "Mercy", "Justice", "Power", "Speed", "Skill", "Luck", "Fate", "Destiny", "Doom", "Eternal", "Infinite", "Zero", "One", "Omega", "Alpha"
+    ],
+    atlanta: [
+        // English
+        "Rex", "andriel", "Ghost titan", "Killer", "mink", "Vortex", "Alpha", "light", "Sky", "ppppppppp", "Mexico", "USA", "Canada", "Texas", "California", "Florida Man", "Burger", "Eagle", "Liberty", "Freedom", "No Lag", "High Ping", "GamerTag", "Sweat", "Clutch", "Default", "Bot", "Hacker", "Admin", "Mod", "Twitch_Tv", "YT_Gamer", "Tiktok", "Viral", "Sigma", "Rizz", "Skibidi", "Ohio", "Deadly", "Silent", "Savage", "Beast", "Monster", "Alien", "Space", "Galaxy", "Mars", "Earth", "Moon", "Star", "B+ is F", "Kim Jong Un", "Squid Game", "Solo Leveling",
+        // Spanish
+        "Carlos", "José", "Mateo", "MADURO", "Diego", "ADIOS MADURO", "El Pro", "GamerLatino", "Mexico777", "Chavo", "Don Ramon", "Messi", "Cristiano", "Futbol", "GOL", "Rey", "Fuego", "Agua", "Tierra", "Aire", "Juan", "Luis", "Angel", "Javier", "Paco", "Taco", "Burrito", "Salsa", "Picante", "Amigo", "Hermano", "Primo", "Tio", "Abuelo", "Loco", "Tranquilo", "Rapido", "Fuerte", "Grande", "Pequeño", "Muerte", "Vida", "Sol", "Luna", "Estrella", "Nube", "Rayo", "Trueno", "Viento", "Tormenta",
+        "Milei AFUERA", "Cartel Leader", "Taco Bell", "La Migra", "Viva Mexico", "El Diablo", "Che Guevara", "Boca Shaka Laka", "Latino Power",
+        // Brazilian
+        "Thiago", "lucas", "Felipe", "gabriel", "Brasil", "GD", "Bolsonaro2027", "Lula", "Neymar", "Ronaldinho", "Pelé", "Favela", "Carioca", "Paulista", "BR_PRO", "HUEHUE", "Kkkk", "Mano", "Cara", "Guri", "Moleque", "Zueira", "Mito", "Lenda", "Rei do Gado", "Coxinha", "Pao de Queijo", "Samba", "Carnaval", "Flamengo", "Corinthians", "Palmeiras", "Vasco", "Santos", "Gremio", "Inter", "Cruzeiro", "Galo", "Botafogo", "Fluminense", "Bahia", "Vitoria", "Sport", "Ceara", "Fortaleza", "Goias", "Coritiba", "Parana", "Avaí", "Chape",
+        // Clan Tags/Misc
+        "[ACE]", "[GOD]", "[PRO]", "[YT]", "[TT]", "[FB]", "Clan_Leader", "Member", "Soldier", "Captain", "General", "Major", "Colonel", "Sergeant", "Private", "Recruit", "Veteran", "Survivor", "Warrior", "Knight", "Paladin", "Rogue", "Mage", "Healer", "Tank", "DPS", "Support", "Carry", "Feeder", "CarryMe", "Solo", "Team", "Unity", "Force", "Squad", "Gang", "Mafia", "Cartel", "Family", "Brothers", "Sisters", "Friends", "Enemies", "Rivals", "Legends", "Heroes", "Villains", "Monsters", "Demons", "Angels"
+    ],
+    hongkong: [
+        // Vietnamese
+        "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Phan", "Vũ", "Đặng", "VIET NAM NO PRO", "anh", "Bảo", "Cường", "Dũng", "Duy", "Hải", "Hiếu", "Hùng", "Huy", "Khoa", "Kiệt", "Lâm", "Long", "Minh", "Nam", "Phong", "Phúc", "Quân", "Quang", "Sơn", "Thành", "Thắng", "Thịnh", "Tiến", "Trung", "Tuấn", "Việt", "Vinh", "Đức", "Tùng", "Hoà", "VN_Gamer", "Pro_VN", "Thanh Pho", "Ha Noi", "Sai Gon", "Pho Ga", "Bun Bo", "Ca Phe", "Moi Nhau", "Hết Nước Chấm", "Ăn Gian", "Gà", "Pro Quá", "Đỉnh", "Vãi", "Clown", "No1", "Top1", "GaVn", "SieuNhan", "Rồng", "Hổ", "Báo", "Đại Bàng", "Sói", "Cá Mập", "Voi", "Khỉ", "Trâu", "Bò", "Gấu", "Mèo", "Chó", "Chim", "Cá", "Tôm", "Cua", "Ốc",
+        // Chinese
+        "王", "李", "张", "刘", "陈", "杨", "赵", "黄", "周", "吴", "徐", "孙", "胡", "朱", "高", "林", "何", "郭", "马", "罗", "中国", "无敌", "高手", "大神", "菜鸟", "大哥", "小弟", "狂人", "战神", "龙", "虎", "剑", "刀", "火", "水", "山", "电", "风", "云", "天",
+        // Japanese
+        "佐藤", "田中", "鈴木", "高橋", "渡辺", "伊藤", "山本", "中村", "小林", "加藤", "吉田", "山田", "佐々木", "山口", "松本", "井上", "木村", "林", "斎藤", "清水", "忍者", "侍", "神", "鬼", "龍", "桜", "東京", "大阪", "日本", "アニメ", "オタク", "カワイイ", "最強", "平和", "希望", "絶望", "光", "闇", "星", "月",
+        // Thai & English/Korean
+        "สมชาย", "สมศักดิ์", "พรชัย", "วิชัย", "มานะ", "อุดม", "สุรพล", "กิตติ", "นเรศ", "สมเกียรติ", "ไทย", "เทพ", "สู้ๆ", "เก่ง", "โหด", "กาก", "รักนะ", "สวัสดี", "โชคดี", "ลุย", "Don't", "KOREA", "hello", "Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Seoul", "Busan", "K-Pop", "BTS", "Blackpink", "Gaming", "Asia_No1", "Ping999", "Laggy", "EZ", "GG", "WP"
+    ],
+tokyo: [
+        // Japanese Kana (70%)
+        "サトウ", "タナカ", "スズキ", "タカハシ", "ワタナベ", "イトウ", "ヤマモト", "ナカムラ", "コバヤシ", "カトウ", 
+        "ヨシダ", "ヤマダ", "ササキ", "ヤマグチ", "マツモト", "イノウエ", "キムラ", "ハヤシ", "サイトウ", "シミズ",
+        "アキラ", "ケンジ", "ヒロシ", "タケシ", "ナオキ", "ユウキ", "マナブ", "ツヨシ", "リュウ", "ハヤト",
+        // Korean Hangul (25%)
+        "김민준", "이서준", "박예준", "최도윤", "정주원", "하준", "지호", "도현", "서진", "연우",
+        "민지", "서현", "하은", "지민", "윤아",
+        // English (5% - Rare)
+        "Ghost", "Ace", "Ninja", "JP_Pro", "Zen",
+    ],
+    sydney: [
+        // English names from Atlanta modified for Sydney
+        "Jacko", "Bazza", "Dazza", "Sharon", "Bruce", "Sheila", "Kazza", "Mozza", "Noa", "Liam",
+        "Aussie_Rex", "Outback_Ghost", "Wallaby_Killer", "Koala_Vortex", "Joey_Alpha", "Sky_Sydney",
+        "Vortex", "Alpha", "light", "Sky", "Liberty", "Freedom", "No Lag", "GamerTag", "Sweat", 
+        "Clutch", "Default", "Bot", "Hacker", "Admin", "Mod", "Twitch_Tv", "YT_Gamer", "Tiktok", 
+        "Deadly", "Silent", "Savage", "Beast", "Monster", "Alien", "Space", "Galaxy", "Earth", "Moon",
+        "Ute_Driver", "Barbie_King", "Ripper_Pro", "GreatBarrier", "GoldCoast", "Tasmania"
+    ]
+};
+let kills = 0;
+let gameStartTime = 0;
+const TANK_TYPES = {
+    basic: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}], dmgMult: 1, baseReload: 50 },
+    twin: { barrels: [{x:0, y:-0.7, w:1.8, h:0.6, ang:0}, {x:0, y:0.1, w:1.8, h:0.6, ang:0}], dmgMult: 0.65, baseReload: 25 },
+   tripleShot: { 
+        barrels: [
+            {x:0, y:-0.3, w:1.8, h:0.6, ang:0}, 
+            {x:0, y:-0.3, w:1.8, h:0.6, ang: 0.5}, 
+            {x:0, y:-0.3, w:1.8, h:0.6, ang: -0.5}
+        ], 
+        dmgMult: 0.6, baseReload: 35 
+    },
+    sniper: { barrels: [{x:0, y:-0.2, w:2.4, h:0.4, ang:0}], dmgMult: 1.2, baseReload: 100 },
+    machine: { barrels: [{x:0, y:-0.5, w:1.7, h:1.0, ang:0}], dmgMult: 0.7, baseReload: 22, spread: 0.65 },
+    flankGuard: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.35, w:1.8, h:0.7, ang: Math.PI}], dmgMult: 1, baseReload: 50 },
+    triAngle: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.3, w:1.5, h:0.5, ang: 2.6}, {x:0, y:-0.3, w:1.5, h:0.5, ang: -2.6}], dmgMult: 0.8, baseReload: 25 },
+    destroyer: { barrels: [{x:0, y:-0.6, w:1.8, h:1.2, ang:0}], dmgMult: 3.5, baseReload: 150, bulletSize: 2.5 },
+    trapper: { barrels: [{x:0, y:-0.4, w:1.2, h:0.8, ang:0, trap:true}], dmgMult: 1.5, baseReload: 80, isTrapper: true },
+    overseer: { barrels: [{x:0, y:-0.3, w:1.2, h:0.6, ang:Math.PI/2, trap:true}, {x:0, y:-0.3, w:1.2, h:0.6, ang:-Math.PI/2, trap:true}], isDroneSpawner: true, maxDrones: 8, dmgMult: 1, baseReload: 65 }
+};
+
+const STATS_MAP = ["regen", "maxHp", "bodyDmg", "bulletSpd", "bulletPen", "bulletDmg", "reload", "moveSpd"];
+const STATS_LABELS = ["Health Regen", "Max Health", "Body Damage", "Bullet Speed", "Bullet Pen", "Bullet Dmg", "Reload", "Move Speed"];
+
+const SHAPES = {
+    sq: { sides: 4, hp: 15, xp: 15, size: 18, color: '#ffe869' },
+    tr: { sides: 3, hp: 35, xp: 35, size: 20, color: '#fc7677' },
+    pt: { sides: 5, hp: 140, xp: 180, size: 35, color: '#768dfc' },
+    hx: { sides: 6, hp: 700, xp: 2000, size: 45, color: '#00ffff' }
+};
+let selectedRegion = "frankfurt";
+let gameState = 'MENU', gameMode = 'FFA', player, entities = [], bullets = [], drones = [], keys = {}, mouse = {x: 0, y: 0}, camera = {x:2000, y:2000}, currentZoom = 1, autoFire = false, autoSpin = false;
+let joystick = { active: false, x: 0, y: 0, startX: 0, startY: 0 };
+let mobileFireActive = false;
+const GAME_MODES = {
+    FFA: 'FFA',
+    TEAMS: 'TEAMS',
+    TEAMS_4: '4TEAMS',
+    MAZE: 'MAZE'
+};
+const getScoreForLevel = (lvl) => Math.floor(20 * Math.pow(lvl, 1.85));
+const formatScore = (num) => Math.floor(num).toLocaleString();
+let walls = [];
+const TEAM_COLORS = {
+    BLUE: '#00b2e1',   // Top Left
+    RED: '#f14e4e',    // Bottom Right
+    GREEN: '#43e04b',  // Bottom Left
+    YELLOW: '#fed330'  // Top Right
+};
+function checkWallCollision(x, y, radius) {
+    return walls.some(wall => {
+        const closestX = Math.max(wall.x, Math.min(x, wall.x + wall.w));
+        const closestY = Math.max(wall.y, Math.min(y, wall.y + wall.h));
+        const distance = Math.hypot(x - closestX, y - closestY);
+        return distance < radius;
+    });
+}
+function generateMaze() {
+    walls = [];
+    const cellSize = 100;
+    const cols = Math.floor(ARENA_SIZE / cellSize);
+    const rows = Math.floor(ARENA_SIZE / cellSize);
+    
+    // Create grid layout with occasional walls
+    for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+            if (Math.random() > 0.7 && 
+                !(i < 3 && j < 3) &&  // Leave spawn area clear
+                !(i > cols-4 && j > rows-4)) {
+                walls.push({
+                    x: i * cellSize,
+                    y: j * cellSize,
+                    w: cellSize,
+                    h: cellSize
+                });
+            }
+        }
+    }
+}
+function checkWallCollision(ent) {
+    const r = ent.radius || ent.size || 8;
+    walls.forEach(w => {
+        // Find closest point on wall to circle
+        let closestX = Math.max(w.x, Math.min(ent.x, w.x + w.w));
+        let closestY = Math.max(w.y, Math.min(ent.y, w.y + w.h));
+        let dx = ent.x - closestX;
+        let dy = ent.y - closestY;
+        let distance = Math.hypot(dx, dy);
+
+        if (distance < r) {
+            if (ent.vx !== undefined) { // If it's a bullet
+                ent.hp = 0; // Destroy bullet
+            } else { // If it's a tank
+                let overlap = r - distance;
+                let ang = Math.atan2(dy, dx);
+                ent.x += Math.cos(ang) * overlap;
+                ent.y += Math.sin(ang) * overlap;
+            }
+        }
+    });
+}
+function setMode(m) { 
+    gameMode = m; 
+    document.getElementById('btn-ffa').className = m === 'FFA' ? 'mode-btn active' : 'mode-btn'; 
+    document.getElementById('btn-teams').className = m === 'TEAMS' ? 'mode-btn active' : 'mode-btn'; 
+}
+
+function constrain(ent) {
+    const r = ent.radius || ent.size || 20;
+    ent.x = Math.max(r, Math.min(ARENA_SIZE - r, ent.x));
+    ent.y = Math.max(r, Math.min(ARENA_SIZE - r, ent.y));
+}
+
+function createTank(x, y, color, name, isBot = false) {
+    let t = { id: Math.random(), x, y, color, name, isBot, radius: 20, level: 1, score: 0, skillPoints: 0, vx: 0, vy: 0, angle: 0, hp: 100, maxHp: 100, bodyDmg: 2, type: 'basic', reload: 0, stats: Array(8).fill(0), team: color };
+    
+    if(isBot) { 
+        t.score = 14000 + Math.random() * 24000; 
+        checkLvl(t); 
+        
+        const bulletStats = [3, 4, 5, 6]; 
+        const otherStats = [0, 1, 2, 7]; 
+        
+        while(t.skillPoints > 0) {
+            let randStat = (Math.random() < 0.7) ? bulletStats[Math.floor(Math.random() * bulletStats.length)] : otherStats[Math.floor(Math.random() * otherStats.length)];
+            if(t.stats[randStat] < 7) { t.stats[randStat]++; t.skillPoints--; }
+            else {
+                let available = t.stats.map((v, i) => v < 7 ? i : -1).filter(v => v !== -1);
+                if(available.length > 0) { t.stats[available[Math.floor(Math.random() * available.length)]]++; t.skillPoints--; }
+                else break;
+            }
+        }
+        const evos = ['twin', 'machine', 'sniper', 'overseer'];
+        t.type = evos[Math.floor(Math.random() * evos.length)];
+    }
+    return t;
+}
+
+function startGame() {
+    // 1. Get Selections from UI
+    gameMode = document.getElementById("modeSelect").value;
+    selectedRegion = document.getElementById("regionSelect").value;
+    const nameInput = document.getElementById('playerName').value;
+
+    // 2. Setup Player Positioning and Color
+    let startX, startY, pColor;
+   if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+        const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
+        if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
+        
+        // Simple auto-balance: join the team with the fewest players
+        const counts = teams.map(c => ({
+            color: c, 
+            count: entities.filter(e => !e.isShape && e.team === c).length
+        }));
+        pColor = counts.sort((a, b) => a.count - b.count)[0].color;
+        
+        // Corner Logic
+        const margin = 300;
+        if (pColor === TEAM_COLORS.BLUE) { startX = margin; startY = margin; }
+        else if (pColor === TEAM_COLORS.RED) { startX = ARENA_SIZE - margin; startY = ARENA_SIZE - margin; }
+        else if (pColor === TEAM_COLORS.GREEN) { startX = margin; startY = ARENA_SIZE - margin; }
+        else if (pColor === TEAM_COLORS.YELLOW) { startX = ARENA_SIZE - margin; startY = margin; }
+        
+    } else {
+        pColor = '#00b2e1';
+        startX = Math.random() * ARENA_SIZE; 
+        startY = Math.random() * ARENA_SIZE;
+    }
+
+    // 3. Initialize Player Object
+    player = createTank(startX, startY, pColor, nameInput || "Unnamed");
+    
+    // Set starting level to 45 with corresponding skill points
+    player.score = getScoreForLevel(45);
+    player.level = 45;
+    player.skillPoints = 44;
+
+    // 4. Reset Game World
+    entities = []; 
+    bullets = []; 
+    drones = []; 
+    kills = 0;
+    gameState = 'PLAYING';
+    gameStartTime = Date.now();
+    lastTime = performance.now(); // Reset delta-time anchor
+
+    // 5. Update UI
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('death-screen').style.display = 'none';
+    initStatsUI();
+    updateUI();
+
+    // 6. Spawn World Objects
+    for(let i=0; i<450; i++) spawnShape();
+    
+    // 7. Calculate and Spawn Bots based on Region Population
+    let baseBotCount = 24;
+    if (selectedRegion === 'tokyo') {
+        baseBotCount = Math.floor(baseBotCount * 0.8); // 20% less
+    } else if (selectedRegion === 'sydney') {
+        baseBotCount = Math.floor(baseBotCount * 0.3); // 70% less
+    }else if (selectedRegion === 'atlanta') {
+        baseBotCount = Math.floor(baseBotCount * 1.5); // 50% more
+    }
+    
+    
+    for(let i=0; i < baseBotCount; i++) {
+        spawnBot();
+    }
+}
+
+function spawnShape() {
+    const r = Math.random(); 
+    let type = r < 0 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
+    entities.push({ ...type, x: Math.random()*ARENA_SIZE, y: Math.random()*ARENA_SIZE, vx: 0, vy: 0, currHp: type.hp, maxHp: type.hp, bodyDmg: type.size/3, isShape: true, rot: Math.random()*6, rotSpd: (Math.random()-0.5)*0.05, id: Math.random() });
+}
+
+function spawnBot() {
+    let color;
+    const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
+    if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
+    if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+        const counts = teams.map(c => ({
+            color: c, 
+            count: (player && player.team === c ? 1 : 0) + entities.filter(e => !e.isShape && e.team === c).length
+        }));
+        color = counts.sort((a, b) => a.count - b.count)[0].color;
+    } else { 
+        color = '#f14e4e'; 
+    }
+
+    let x, y;
+    const margin = 300;
+    if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+        if (color === TEAM_COLORS.BLUE) { x = margin; y = margin; }
+        else if (color === TEAM_COLORS.RED) { x = ARENA_SIZE - margin; y = ARENA_SIZE - margin; }
+        else if (color === TEAM_COLORS.GREEN) { x = margin; y = ARENA_SIZE - margin; }
+        else if (color === TEAM_COLORS.YELLOW) { x = ARENA_SIZE - margin; y = margin; }
+        // Add random jitter to spawn
+        x += (Math.random() - 0.5) * 200;
+        y += (Math.random() - 0.5) * 200;
+    } else {
+        x = Math.random() * ARENA_SIZE;
+        y = Math.random() * ARENA_SIZE;
+    }
+
+    // Pick name based on region
+    const regionPool = REGION_NAMES[selectedRegion] || REGION_NAMES['frankfurt'];
+    const botName = regionPool[Math.floor(Math.random() * regionPool.length)];
+
+    entities.push(createTank(x, y, color, botName, true));
+}
+function getBotTarget(b) {
+    let target = null, minDist = Infinity, targetType = 'none';
+    if (gameMode === 'FFA' || (player && player.team !== b.team)) {
+        let d = Math.hypot(player.x - b.x, player.y - b.y);
+        if (d < minDist) { target = player; minDist = d; targetType = 'tank'; }
+    }
+    entities.forEach(en => {
+        if (en.id !== b.id && (en.isShape || gameMode === 'FFA' || en.team !== b.team)) {
+            let d = Math.hypot(en.x - b.x, en.y - b.y);
+            if (d < minDist) { target = en; minDist = d; targetType = en.isShape ? 'shape' : 'tank'; }
+        }
+    });
+    drones.forEach(dr => {
+        if (gameMode === 'FFA' || dr.team !== b.team) {
+            let d = Math.hypot(dr.x - b.x, dr.y - b.y);
+            if (d < minDist) { target = dr; minDist = d; targetType = 'drone'; }
+        }
+    });
+    return { target, targetType };
+}
+
+function updateStatLogic(t) {
+    if(t.isShape) return;
+    t.maxHp = 100 + (t.stats[1] * 25);
+    t.bodyDmg = 2 + (t.stats[2] * 4);
+    t.radius = 20 + (t.level * 0.35);
+}
+
+function update() {
+    if(gameState !== 'PLAYING') return;
+    updateStatLogic(player);
+    if(autoSpin) player.angle += 0.05; if(autoFire || mobileFireActive) fire(player);
+    const spd = 0.22 + player.stats[7] * 0.03;
+    if(joystick.active) { player.vx += (joystick.x / 60) * spd; player.vy += (joystick.y / 60) * spd; }
+    if(keys['KeyW']) player.vy -= spd; if(keys['KeyS']) player.vy += spd;
+    if(keys['KeyA']) player.vx -= spd; if(keys['KeyD']) player.vx += spd;
+    player.vx *= 0.9; player.vy *= 0.9; player.x += player.vx; player.y += player.vy;
+    constrain(player);
+    if(player.hp < player.maxHp) player.hp += 0.025 + player.stats[0]*0.07;
+    player.reload--;
+
+    [player, ...entities].forEach(owner => {
+        if (!owner.isShape && TANK_TYPES[owner.type].isDroneSpawner) {
+            let curDrones = drones.filter(d => d.ownerId === owner.id);
+            if (curDrones.length < 8 && owner.reload <= 0) {
+                drones.push({ id: Math.random(), ownerId: owner.id, team: owner.team, x: owner.x, y: owner.y, vx: 0, vy: 0, radius: 18, hp: 25 + owner.stats[4]*15, damage: 6 + owner.stats[5]*4, bodyDmg: 5 + owner.stats[2]*2, speed: 1.75 + owner.stats[3]*0.45 });
+                owner.reload = TANK_TYPES[owner.type].baseReload * Math.pow(0.85, owner.stats[6]);
+            }
+        }
+    });
+
+    drones.forEach((d, idx) => {
+        // Check if owner is player or still exists in entities
+    let owner = (player && d.ownerId === player.id) ? player : entities.find(e => e.id === d.ownerId);
+    
+    // FIX: If owner is gone, destroy the drone
+    if(!owner) { 
+        drones.splice(idx, 1); 
+        return; 
+    }
+        if(!owner) { drones.splice(idx,1); return; }
+        drones.forEach(d2 => {
+            if(d === d2) return;
+            let dist = Math.hypot(d.x-d2.x, d.y-d2.y);
+            if(dist < d.radius*2.2) { let ang = Math.atan2(d.y-d2.y, d.x-d2.x); d.vx += Math.cos(ang)*0.4; d.vy += Math.sin(ang)*0.4; }
+        });
+        let tx, ty;
+        if(owner === player) { tx = (mouse.x - canvas.width/2)/currentZoom + player.x; ty = (mouse.y - canvas.height/2)/currentZoom + player.y; }
+        else { let res = getBotTarget(owner); if(res.target) { tx = res.target.x; ty = res.target.y; } else { tx = owner.x + Math.cos(Date.now()/500+d.id)*80; ty = owner.y + Math.sin(Date.now()/500+d.id)*80; } }
+        let ang = Math.atan2(ty - d.y, tx - d.x);
+        let f = (owner === player && (keys['ShiftLeft'] || keys['ShiftRight'])) ? -1 : 1; 
+        d.vx += Math.cos(ang) * (d.speed * 0.1) * f; d.vy += Math.sin(ang) * (d.speed * 0.1) * f;
+        d.vx *= 0.95; d.vy *= 0.95; d.x += d.vx; d.y += d.vy;
+        constrain(d);
+        entities.forEach(en => {
+            if(d.ownerId !== en.id && (en.isShape || gameMode === 'FFA' || d.team !== en.team)) {
+                if(Math.hypot(d.x-en.x, d.y-en.y) < (en.radius||en.size)+d.radius) { handleDamage(en, d.damage/10, d.ownerId); d.hp -= (en.bodyDmg || 2); if(d.hp <= 0) drones.splice(idx,1); }
+            }
+        });
+        if(player && owner.id !== player.id && (gameMode === 'FFA' || d.team !== player.team)) {
+            if(Math.hypot(d.x-player.x, d.y-player.y) < player.radius + d.radius) { handleDamage(player, d.damage/10, d.ownerId); d.hp -= player.bodyDmg; if(d.hp <= 0) drones.splice(idx,1); }
+        }
+    });
+
+    entities.forEach(en => { 
+        if(!en.isShape) { updateStatLogic(en); botAI(en); en.reload--; en.x += en.vx; en.y += en.vy; en.vx *= 0.9; en.vy *= 0.9; constrain(en); } 
+        if(player) resolveCollision(player, en);
+        entities.forEach(en2 => { if(en !== en2) resolveCollision(en, en2); });
+    });
+
+    bullets.forEach((b, i) => {
+if (b.isTrap) {
+        b.vx *= 0.92; // Rapidly slow down
+        b.vy *= 0.92;
+    }
+        b.x += b.vx; b.y += b.vy; b.life--;
+        if(player && b.ownerId !== player.id && (gameMode === 'FFA' || b.team !== player.team)) { 
+            if(Math.hypot(b.x-player.x, b.y-player.y) < player.radius) { handleDamage(player, b.damage / 8, b.ownerId); b.hp -= player.bodyDmg; } 
+        }
+        drones.forEach((dr, dIdx) => {
+            if (b.team !== dr.team) { if (Math.hypot(b.x - dr.x, b.y - dr.y) < dr.radius + 8) { dr.hp -= b.damage / 6; b.hp -= dr.bodyDmg; if (dr.hp <= 0) drones.splice(dIdx, 1); } }
+        });
+        entities.forEach(en => { 
+            if(b.ownerId !== en.id && (en.isShape || gameMode === 'FFA' || b.team !== en.team)) { if(Math.hypot(b.x-en.x, b.y-en.y) < (en.radius||en.size)) { handleDamage(en, b.damage / 8, b.ownerId); b.hp -= (en.bodyDmg || 2); } } 
+        });
+        if(b.life<=0 || b.hp <= 0) bullets.splice(i,1);
+    });
+    if(player) { camera.x = player.x; camera.y = player.y; }
+    updateLeaderboard();
+}
+
+function resolveCollision(a, b) {
+    // If either entity is a shape, or it's FFA, or they are on different teams, they should take damage
+    const isTeammate = !a.isShape && !b.isShape && (gameMode === 'TEAMS' || gameMode === '4TEAMS') && a.team === b.team;
+
+    let rA = a.radius || a.size, rB = b.radius || b.size;
+    let dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy), min = rA + rB;
+
+    if (dist < min) {
+        let ang = Math.atan2(dy, dx);
+        let over = min - dist;
+
+        if (isTeammate) {
+            // Teammates: Only apply a gentle push to separate them, no damage
+            let push = over * 0.5;
+            a.x -= Math.cos(ang) * push;
+            a.y -= Math.sin(ang) * push;
+            b.x += Math.cos(ang) * push;
+            b.y += Math.sin(ang) * push;
+            
+            // Apply a small velocity change so they don't feel "stuck"
+            a.vx -= Math.cos(ang) * 0.1;
+            a.vy -= Math.sin(ang) * 0.1;
+            b.vx += Math.cos(ang) * 0.1;
+            b.vy += Math.sin(ang) * 0.1;
+        } else {
+            // Enemies or Shapes: Hard collision and apply body damage
+            a.x -= Math.cos(ang) * over * 0.5;
+            a.y -= Math.sin(ang) * over * 0.5;
+            b.x += Math.cos(ang) * over * 0.5;
+            b.y += Math.sin(ang) * over * 0.5;
+
+            handleDamage(a, (b.bodyDmg || 2) / 10, b.id);
+            handleDamage(b, (a.bodyDmg || 2) / 10, a.id);
+        }
+    }
+}
+
+function botAI(b) {
+    while(b.score >= getScoreForLevel(b.level+1) && b.level < 45) { b.level++; b.skillPoints++; }
+    let res = getBotTarget(b);
+    if(res.target) {
+        let ang = Math.atan2(res.target.y - b.y, res.target.x - b.x); b.angle = ang; 
+        if(Math.hypot(res.target.x-b.x, res.target.y-b.y) < 1000) fire(b);
+        const s = 0.22 + b.stats[7]*0.03;
+        if (res.targetType === 'drone') {
+            let owner = (player && player.id === res.target.ownerId) ? player : entities.find(e => e.id === res.target.ownerId);
+            if (owner) { let fleeAng = Math.atan2(owner.y - b.y, owner.x - b.x); b.vx -= Math.cos(fleeAng) * s; b.vy -= Math.sin(fleeAng) * s; }
+        } else {
+            const ideal = 140, dist = Math.hypot(res.target.x-b.x, res.target.y-b.y);
+            let move = dist > ideal + 40 ? 1 : (dist < ideal - 40 ? -1 : 0);
+            b.vx += Math.cos(ang)*s*move; b.vy += Math.sin(ang)*s*move;
+        }
+    }
+}
+
+function fire(t) {
+    if(t.reload > 0 || TANK_TYPES[t.type].isDroneSpawner) return;
+    const cfg = TANK_TYPES[t.type];
+    
+    cfg.barrels.forEach(b => {
+        let finalAng = t.angle + b.ang + (cfg.spread ? (Math.random() - 0.5) * cfg.spread : 0);
+        
+        // ADDED: Recoil Logic
+        let recoil = (cfg.bulletSize || 1) * 0.5;
+        t.vx -= Math.cos(finalAng) * recoil;
+        t.vy -= Math.sin(finalAng) * recoil;
+
+        bullets.push({ 
+            ownerId: t.id, 
+            x: t.x + Math.cos(finalAng)*t.radius*1.5, 
+            y: t.y + Math.sin(finalAng)*t.radius*1.5, 
+            vx: Math.cos(finalAng)*(3.5+t.stats[3]*0.6), 
+            vy: Math.sin(finalAng)*(3.5+t.stats[3]*0.6), 
+            team: t.team, 
+            damage: (15+t.stats[5]*8)*cfg.dmgMult, 
+            hp: 20 + (t.stats[4] * 18), 
+            life: cfg.isTrapper ? 600 : 90 + t.stats[4]*18, // Traps last longer
+            radius: 8 * (cfg.bulletSize || 1), // Scaled bullet size
+            isTrap: cfg.isTrapper
+        });
+    });
+    t.reload = cfg.baseReload * Math.pow(0.88, t.stats[6]);
+}
+function handleDamage(t, a, kId) { 
+    if(t.isShape) { t.currHp -= a; if(t.currHp <= 0) finalizeKill(t, kId); } 
+    else { t.hp -= a; if(t.hp <= 0) { if(player && t === player) endGame(); else finalizeKill(t, kId); } } 
+}
+
+function finalizeKill(t, kId) {
+    let xp = t.isShape ? t.xp : (22000 + Math.random() * 2000);
+    if(player && kId === player.id) { player.score += xp; checkLvl(player); }
+    else { let kb = entities.find(e => e.id === kId); if(kb) { kb.score += xp; } }
+    let idx = entities.indexOf(t); if(idx > -1) { entities.splice(idx,1); if(t.isShape) spawnShape(); else setTimeout(() => spawnBot(), 3000); }
+if (player && kId === player.id && !t.isShape) {
+    kills++;
+}
+
+}
+
+function checkLvl(p) { while(p.score >= getScoreForLevel(p.level+1) && p.level < 45) { p.level++; p.skillPoints++; } if(player && p === player) updateUI(); }
+
+function initStatsUI() {
+    const list = document.getElementById('stat-list'); list.innerHTML = "";
+    STATS_LABELS.forEach((s, i) => {
+        const row = document.createElement('div'); row.className = 'stat-row';
+        row.onclick = () => { if(player && player.skillPoints > 0 && player.stats[i] < 7) { player.stats[i]++; player.skillPoints--; updateUI(); } };
+        row.innerHTML = `<div style="color:white; font-size:10px; width:85px;">${s}</div><div class="stat-bar" id="stat-${i}">${Array(7).fill('<div class="stat-seg"></div>').join('')}</div>`;
+        list.appendChild(row);
+    });
+}
+function updateUI() {
+    if(!player) return;
+
+    // Update Level and Name in the HUD
+    document.getElementById('tank-name-display').innerText = player.name;
+    document.getElementById('lvl-txt').innerText = `Level ${player.level} ${player.type.toUpperCase()}`;
+
+    // XP Bar
+    const curSc = getScoreForLevel(player.level);
+    const nxtSc = getScoreForLevel(player.level + 1);
+    const progress = ((player.score - curSc) / (nxtSc - curSc)) * 100;
+    document.getElementById('xp-bar').style.width = Math.min(100, progress) + "%";
+
+    // Stat Upgrades
+    document.getElementById('pt-count').innerText = player.skillPoints;
+    document.getElementById('upgrades').classList.toggle("hidden", player.skillPoints <= 0);
+    
+    STATS_LABELS.forEach((_, i) => { 
+        const bar = document.getElementById(`stat-${i}`); 
+        if(bar) { 
+            const segs = bar.children; 
+            for(let j=0; j<7; j++) {
+                segs[j].style.background = j < player.stats[i] ? '#00b2e1' : 'rgba(255,255,255,0.2)'; 
+            }
+        } 
+    });
+
+    // Evolution Logic
+    const evoMenu = document.getElementById('evolution-menu');
+    evoMenu.innerHTML = '';
+    let options = [];
+
+    if(player.level >= 15 && player.type === 'basic') {
+        options = ['twin', 'sniper', 'machine', 'flankGuard'];
+    } else if (player.level >= 45) {
+        if(player.type === 'machine') options = ['destroyer'];
+        if(player.type === 'sniper') options = ['overseer', 'trapper'];
+        if(player.type === 'flankGuard') options = ['triAngle'];
+        if(player.type === 'twin') options = ['tripleShot']; // You can add tripleShot later
+    }
+
+    if(options.length > 0) {
+        evoMenu.style.display = 'flex';
+        options.forEach(opt => {
+            const btn = document.createElement('div');
+            btn.className = 'evo-btn';
+            btn.innerText = opt.charAt(0).toUpperCase() + opt.slice(1);
+            btn.onclick = () => { player.type = opt; updateUI(); };
+            evoMenu.appendChild(btn);
+        });
+    } else {
+        evoMenu.style.display = 'none';
+    }
+}
+function evolve(t) { player.type = t; updateUI(); }
+function updateLeaderboard() {
+    const lb = document.getElementById('leaderboard');
+    if (!lb) return;
+
+    // Map internal mode IDs to display names
+    const modeDisplayNames = {
+        'FFA': 'FFA',
+        'TEAMS': '2TDM',
+        '4TEAMS': '4TDM',
+        'MAZE': 'Maze'
+    };
+
+    // Capitalize region name for display
+    const regionDisplay = selectedRegion.charAt(0).toUpperCase() + selectedRegion.slice(1);
+    const modeDisplay = modeDisplayNames[gameMode] || gameMode;
+
+    let all = []; 
+    if(player) all.push(player);
+    all = [...all, ...entities.filter(e => !e.isShape)].sort((a,b) => b.score - a.score);
+
+    // Dynamic Header: e.g., "Frankfurt 2TDM"
+    lb.innerHTML = `<b>${regionDisplay} ${modeDisplay}</b><br>`; 
+    
+    all.slice(0, 8).forEach(t => {
+        lb.innerHTML += `<div style="color:${t.team}">${t.name}: ${formatScore(t.score)}</div>`;
+    });
+}
+
+function drawTank(t) {
+    // Label Settings
+    ctx.textAlign = "center";
+    
+    // Draw Name
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px Ubuntu";
+    ctx.fillText(t.name, t.x, t.y - t.radius - 35); // Moved up to make room for score
+
+    // Draw Score
+    ctx.font = "bold 11px Ubuntu";
+    ctx.fillStyle = "#eeeeee"; // Slightly dimmer white for the score
+    ctx.fillText(formatScore(t.score), t.x, t.y - t.radius - 22);
+
+    // Tank Body Drawing
+    ctx.save(); 
+    ctx.translate(t.x, t.y); 
+    ctx.rotate(t.angle); 
+    ctx.fillStyle = '#999'; 
+    ctx.strokeStyle = '#555'; 
+    ctx.lineWidth = 3;
+    
+    TANK_TYPES[t.type].barrels.forEach(b => {
+        ctx.save(); 
+        ctx.rotate(b.ang);
+        if(b.trap) { 
+            ctx.beginPath(); 
+            ctx.moveTo(0, -t.radius * 0.4); 
+            ctx.lineTo(t.radius * b.w, -t.radius * b.h); 
+            ctx.lineTo(t.radius * b.w, t.radius * b.h); 
+            ctx.lineTo(0, t.radius * 0.4); 
+            ctx.fill(); ctx.stroke(); 
+        } else { 
+            ctx.fillRect(0, b.y * t.radius, b.w * t.radius, b.h * t.radius); 
+            ctx.strokeRect(0, b.y * t.radius, b.w * t.radius, b.h * t.radius); 
+        }
+        ctx.restore();
+    });
+
+    ctx.beginPath(); 
+    ctx.arc(0, 0, t.radius, 0, Math.PI * 2); 
+    ctx.fillStyle = t.team; 
+    ctx.fill(); 
+    ctx.stroke(); 
+    ctx.restore();
+
+    // Health Bar
+    if(t.hp < t.maxHp) { 
+        ctx.fillStyle = '#555'; 
+        ctx.fillRect(t.x - 20, t.y + t.radius + 10, 40, 5); 
+        ctx.fillStyle = '#85e37d'; 
+        ctx.fillRect(t.x - 20, t.y + t.radius + 10, 40 * (t.hp / t.maxHp), 5); 
+    }
+}
+function render() {
+    update(); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.save();
+    ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(currentZoom, currentZoom); ctx.translate(-camera.x, -camera.y);
+    ctx.fillStyle = '#cdcdcd'; ctx.fillRect(0,0,ARENA_SIZE,ARENA_SIZE);
+    // Inside render(), replace the TEAMS background logic:
+if(gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+    const bSize = 700;
+    ctx.globalAlpha = 0.15;
+    // Blue - Top Left
+    ctx.fillStyle = TEAM_COLORS.BLUE; ctx.fillRect(0, 0, bSize, bSize);
+    // Red - Bottom Right
+    ctx.fillStyle = TEAM_COLORS.RED; ctx.fillRect(ARENA_SIZE - bSize, ARENA_SIZE - bSize, bSize, bSize);
+    
+    if (gameMode === '4TEAMS') {
+        // Green - Bottom Left
+        ctx.fillStyle = TEAM_COLORS.GREEN; ctx.fillRect(0, ARENA_SIZE - bSize, bSize, bSize);
+        // Yellow - Top Right
+        ctx.fillStyle = TEAM_COLORS.YELLOW; ctx.fillRect(ARENA_SIZE - bSize, 0, bSize, bSize);
+    }
+    ctx.globalAlpha = 1.0;
+}
+    ctx.strokeStyle = '#bbb'; for(let i=0; i<=ARENA_SIZE; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,ARENA_SIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(ARENA_SIZE,i); ctx.stroke(); }
+// Inside render(), after drawing the grid and before entities
+if (walls.length > 0) {
+    ctx.fillStyle = '#999';
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 4;
+    walls.forEach(w => {
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+        ctx.strokeRect(w.x, w.y, w.w, w.h);
+    });
+}
+    entities.forEach(en => {
+        if(en.isShape) { 
+            ctx.save(); ctx.translate(en.x, en.y); ctx.rotate(en.rot); ctx.beginPath(); for(let i=0; i<en.sides; i++) ctx.lineTo(en.size*Math.cos(i*2*Math.PI/en.sides), en.size*Math.sin(i*2*Math.PI/en.sides)); ctx.closePath(); ctx.fillStyle = en.color; ctx.fill(); ctx.strokeStyle = '#555'; ctx.lineWidth = en.size/10; ctx.stroke(); ctx.restore(); 
+            if(en.currHp < en.maxHp) { ctx.fillStyle = '#555'; ctx.fillRect(en.x-en.size, en.y+en.size+10, en.size*2, 5); ctx.fillStyle = '#85e37d'; ctx.fillRect(en.x-en.size, en.y+en.size+10, (en.size*2)*(en.currHp/en.maxHp), 5); }
+        } else drawTank(en);
+    });
+    bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, Math.PI*2); ctx.fillStyle = b.team; ctx.fill(); ctx.stroke(); });
+    drones.forEach(d => { ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(Math.atan2(d.vy, d.vx)); ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-8,-8); ctx.lineTo(-8,8); ctx.closePath(); ctx.fillStyle = d.team; ctx.fill(); ctx.stroke(); ctx.restore(); });
+    if(gameState === 'PLAYING' && player) drawTank(player);
+    ctx.restore();
+   if (gameState === 'PLAYING' && player) {
+    mctx.clearRect(0, 0, 150, 150);
+    const s = 150 / ARENA_SIZE; // Scale factor
+    const mBaseSize = 700 * s;  // Scaled base size for the minimap
+
+    // Draw Team Bases on Minimap
+    if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+        mctx.globalAlpha = 0.3;
+        
+        // Blue Base - Top Left
+        mctx.fillStyle = TEAM_COLORS.BLUE;
+        mctx.fillRect(0, 0, mBaseSize, mBaseSize);
+        
+        // Red Base - Bottom Right
+        mctx.fillStyle = TEAM_COLORS.RED;
+        mctx.fillRect(150 - mBaseSize, 150 - mBaseSize, mBaseSize, mBaseSize);
+
+        if (gameMode === '4TEAMS') {
+            // Green Base - Bottom Left
+            mctx.fillStyle = TEAM_COLORS.GREEN;
+            mctx.fillRect(0, 150 - mBaseSize, mBaseSize, mBaseSize);
+            
+            // Yellow Base - Top Right
+            mctx.fillStyle = TEAM_COLORS.YELLOW;
+            mctx.fillRect(150 - mBaseSize, 0, mBaseSize, mBaseSize);
+        }
+        mctx.globalAlpha = 1.0;
+    }
+
+    // Draw Player
+    mctx.fillStyle = "white";
+    mctx.fillRect(player.x * s - 2, player.y * s - 2, 4, 4);
+
+    // Draw Other Entities (Bots)
+    entities.forEach(en => {
+        if (!en.isShape) {
+            mctx.fillStyle = en.team;
+            mctx.fillRect(en.x * s - 1.5, en.y * s - 1.5, 3, 3);
+        }
+    });
+}
+    requestAnimationFrame(render);
+}
+
+function endGame() {
+    gameState = 'DEAD';
+
+    const timeAlive = Math.floor((Date.now() - gameStartTime) / 1000);
+
+    document.getElementById('death-stats').innerHTML = `
+        <b>${player.name}</b><br>
+        Score: ${formatScore(player.score)}<br>
+        Level: ${player.level} (${player.type.toUpperCase()})<br>
+        Kills: ${kills}<br>
+        Time Alive: ${timeAlive}s<br>
+        Region: ${selectedRegion}
+    `;
+
+    document.getElementById('death-screen').style.display = 'flex';
+}
+function resetToMenu() { gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
+
+const joyBase = document.getElementById('joystick-base');
+const joyStick = document.getElementById('joystick-stick');
+const fireBtn = document.getElementById('mobile-fire');
+
+joyBase.addEventListener('touchstart', e => {
+    const touch = e.touches[0]; const rect = joyBase.getBoundingClientRect();
+    joystick.active = true; joystick.startX = rect.left + rect.width / 2; joystick.startY = rect.top + rect.height / 2;
+}, {passive: false});
+
+window.addEventListener('touchmove', e => {
+    if(!player || gameState !== 'PLAYING') return;
+    for(let i=0; i<e.touches.length; i++) {
+        const t = e.touches[i];
+        if(joystick.active && t.clientX < window.innerWidth / 2) {
+            let dx = t.clientX - joystick.startX, dy = t.clientY - joystick.startY, dist = Math.hypot(dx, dy), max = 50;
+            if(dist > max) { dx *= max/dist; dy *= max/dist; }
+            joystick.x = dx; joystick.y = dy; joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+        } else if(!autoSpin) player.angle = Math.atan2((t.clientY-canvas.height/2)/currentZoom, (t.clientX-canvas.width/2)/currentZoom);
+    }
+}, {passive: false});
+
+window.addEventListener('touchend', e => { if(e.touches.length === 0) { joystick.active = false; joystick.x = 0; joystick.y = 0; joyStick.style.transform = `translate(0,0)`; mobileFireActive = false; } });
+fireBtn.addEventListener('touchstart', () => mobileFireActive = true);
+fireBtn.addEventListener('touchend', () => mobileFireActive = false);
+
+window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'KeyE') autoFire = !autoFire; if(e.code === 'KeyC') autoSpin = !autoSpin; });
+window.addEventListener('keyup', e => keys[e.code] = false);
+window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; if(player && !autoSpin) player.angle = Math.atan2((e.clientY-canvas.height/2)/currentZoom, (e.clientX-canvas.width/2)/currentZoom); });
+window.addEventListener('mousedown', () => { if(gameState === 'PLAYING' && player) fire(player); });
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+render();
+</script>
+
+</body></html>
