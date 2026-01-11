@@ -1149,12 +1149,24 @@ function render() {
 if(gameMode === 'TEAMS' || gameMode === '4TEAMS') {
     const bSize = 700;
     ctx.globalAlpha = 0.15;
-    // Blue - Top Left
-    ctx.fillStyle = TEAM_COLORS.BLUE; ctx.fillRect(0, 0, bSize, bSize);
-    // Red - Bottom Right
-    ctx.fillStyle = TEAM_COLORS.RED; ctx.fillRect(ARENA_SIZE - bSize, ARENA_SIZE - bSize, bSize, bSize);
-    
+    // Inside function drawArena()
+    if (gameMode === 'TEAMS') {
+        const baseWidth = ARENA_SIZE * 0.15; // Width of the base (15% of map)
+
+        // Blue Team Base (Left side, full vertical)
+        ctx.fillStyle = TEAM_COLORS.BLUE;
+        ctx.globalAlpha = 0.1;
+        ctx.fillRect(0, 0, baseWidth, ARENA_SIZE);
+            // Red Team Base (Right side, full vertical)
+        ctx.fillStyle = TEAM_COLORS.RED;
+        ctx.fillRect(ARENA_SIZE - baseWidth, 0, baseWidth, ARENA_SIZE);
+        ctx.globalAlpha = 1.0;
+    }
     if (gameMode === '4TEAMS') {
+        // Blue - Top Left
+        ctx.fillStyle = TEAM_COLORS.BLUE; ctx.fillRect(0, 0, bSize, bSize);
+        // Red - Bottom Right
+        ctx.fillStyle = TEAM_COLORS.RED; ctx.fillRect(ARENA_SIZE - bSize, ARENA_SIZE - bSize, bSize, bSize);
         // Green - Bottom Left
         ctx.fillStyle = TEAM_COLORS.GREEN; ctx.fillRect(0, ARENA_SIZE - bSize, bSize, bSize);
         // Yellow - Top Right
@@ -1191,16 +1203,23 @@ if (walls.length > 0) {
     // Draw Team Bases on Minimap
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         mctx.globalAlpha = 0.3;
+        if (gamemode === 'TEAMS'){
+             // Blue Base - Top Left
+        mctx.fillStyle = TEAM_COLORS.BLUE;
+        mctx.fillRect(0, 0, mBaseSize, ARENA_SIZE);
         
-        // Blue Base - Top Left
+        // Red Base - Bottom Right
+        mctx.fillStyle = TEAM_COLORS.RED;
+        mctx.fillRect(150 - mBaseSize, 0, mBaseSize, ARENA_SIZE);
+        }
+        if (gameMode === '4TEAMS') {
+             // Blue Base - Top Left
         mctx.fillStyle = TEAM_COLORS.BLUE;
         mctx.fillRect(0, 0, mBaseSize, mBaseSize);
         
         // Red Base - Bottom Right
         mctx.fillStyle = TEAM_COLORS.RED;
         mctx.fillRect(150 - mBaseSize, 150 - mBaseSize, mBaseSize, mBaseSize);
-
-        if (gameMode === '4TEAMS') {
             // Green Base - Bottom Left
             mctx.fillStyle = TEAM_COLORS.GREEN;
             mctx.fillRect(0, 150 - mBaseSize, mBaseSize, mBaseSize);
