@@ -341,7 +341,7 @@
         </div>
         <div class="menu-footer">
             <span>WASD / Mouse</span>
-            <span>E = Autofire · C = Autospin</span>
+            <span>E = Autofire · C = Autospin · Left Shift = Drone Repel</span>
         </div>
     </div>
 </div>
@@ -522,11 +522,11 @@ tokyo: [
     sydney: [
         // English names from Atlanta modified for Sydney
         "Jacko", "Bazza", "Dazza", "Sharon", "Bruce", "Sheila", "Kazza", "Mozza", "Noa", "Liam",
-        "Aussie_Rex", "Outback_Ghost", "Wallaby_Killer", "Koala_Vortex", "Joey_Alpha", "Sky_Sydney",
+        "AUSSIE Rex", "Outback_Ghost", "Wallaby_Killer", "Koala Vortex", "Joey_Alpha", "Sky_Sydney",
         "Vortex", "Alpha", "light", "Sky", "Liberty", "Freedom", "No Lag", "GamerTag", "Sweat", 
         "Clutch", "Default", "Bot", "Hacker", "Admin", "Mod", "Twitch_Tv", "YT_Gamer", "Tiktok", 
         "Deadly", "Silent", "Savage", "Beast", "Monster", "Alien", "Space", "Galaxy", "Earth", "Moon",
-        "Ute_Driver", "Barbie_King", "Ripper_Pro", "GreatBarrier", "GoldCoast", "Tasmania"
+        "Ute Driver", "Barbie", "Ripper Pro", "GreatBarrier", "GoldCoast", "Tasmania"
     ]
 };
 let kills = 0;
@@ -576,8 +576,8 @@ let walls = [];
 const TEAM_COLORS = {
     BLUE: '#00b2e1',   // Top Left
     RED: '#f14e4e',    // Bottom Right
-    GREEN: '#43e04b',  // Bottom Left
-    YELLOW: '#fed330'  // Top Right
+    GREEN: '#87ff66',  // Bottom Left
+    YELLOW: '#e40ee8'  // Top Right
 };
 function checkWallCollision(x, y, radius) {
     return walls.some(wall => {
