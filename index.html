@@ -585,13 +585,17 @@ function generateMaze() {
     if (gameMode !== 'MAZE') return;
 
     const cellSize = 450;
+    const wallThickness = 30;
+    const gapSize = 120; // How wide the opening in the wall is
+    const gapChance = 0.3; // 15% of walls will have a gap
+    
     const cols = Math.floor(ARENA_SIZE / cellSize);
     const rows = Math.floor(ARENA_SIZE / cellSize);
     
-    // 1. Initialize a grid where every cell has all 4 walls
+    // 1. Standard Recursive Backtracker Setup
     const grid = Array(rows).fill().map(() => Array(cols).fill().map(() => ({
         visited: false,
-        walls: { north: true, south: true, east: true, west: true }
+        walls: { south: true, east: true }
     })));
 
     const stack = [];
@@ -600,12 +604,10 @@ function generateMaze() {
     let visitedCount = 1;
     const totalCells = rows * cols;
 
-    // 2. Walk through the grid (Recursive Backtracker)
     while (visitedCount < totalCells) {
         let neighbors = [];
         let { r, c } = current;
 
-        // Check bounds and if neighbor is unvisited
         if (r > 0 && !grid[r - 1][c].visited) neighbors.push({ r: r - 1, c, dir: 'N' });
         if (r < rows - 1 && !grid[r + 1][c].visited) neighbors.push({ r: r + 1, c, dir: 'S' });
         if (c > 0 && !grid[r][c - 1].visited) neighbors.push({ r, c: c - 1, dir: 'W' });
@@ -613,12 +615,10 @@ function generateMaze() {
 
         if (neighbors.length > 0) {
             let next = neighbors[Math.floor(Math.random() * neighbors.length)];
-            
-            // Remove walls between current and next
-            if (next.dir === 'N') { grid[r][c].walls.north = false; grid[next.r][next.c].walls.south = false; }
-            if (next.dir === 'S') { grid[r][c].walls.south = false; grid[next.r][next.c].walls.north = false; }
-            if (next.dir === 'E') { grid[r][c].walls.east = false; grid[next.r][next.c].walls.west = false; }
-            if (next.dir === 'W') { grid[r][c].walls.west = false; grid[next.r][next.c].walls.east = false; }
+            if (next.dir === 'N') grid[next.r][next.c].walls.south = false;
+            if (next.dir === 'S') grid[r][c].walls.south = false;
+            if (next.dir === 'W') grid[next.r][next.c].walls.east = false;
+            if (next.dir === 'E') grid[r][c].walls.east = false;
 
             grid[next.r][next.c].visited = true;
             visitedCount++;
@@ -626,40 +626,43 @@ function generateMaze() {
             current = { r: next.r, c: next.c };
         } else if (stack.length > 0) {
             current = stack.pop();
-        } else {
-            break; // Safety break
-        }
+        } else break;
     }
 
-    // 3. Optional: "Navi.io" style Braiding
-    // This removes random walls to create loops (so it's not a "perfect" maze)
-    // This prevents too many dead ends without creating "caves"
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            if (Math.random() > 0.92) { // 8% chance to remove an extra wall
-                if (c < cols - 1) grid[r][c].walls.east = false;
+    // 2. The "Opening" Logic
+    const addWallWithGaps = (x, y, w, h, isHorizontal) => {
+        if (Math.random() < gapChance) {
+            // Split one wall into two pieces with a gap in the center
+            if (isHorizontal) {
+                let segmentWidth = (w - gapSize) / 2;
+                walls.push({ x: x, y: y, w: segmentWidth, h: h });
+                walls.push({ x: x + segmentWidth + gapSize, y: y, w: segmentWidth, h: h });
+            } else {
+                let segmentHeight = (h - gapSize) / 2;
+                walls.push({ x: x, y: y, w: w, h: segmentHeight });
+                walls.push({ x: x, y: y + segmentHeight + gapSize, w: w, h: segmentHeight });
             }
+        } else {
+            // Draw a standard solid wall
+            walls.push({ x, y, w, h });
         }
-    }
+    };
 
-    // 4. Convert the grid data into actual wall objects for your game
-    const wallThickness = 30;
+    // 3. Convert Grid to Game Objects
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             let x = c * cellSize;
             let y = r * cellSize;
 
-            // Only add East and South walls (North and West are covered by adjacent cells)
             if (grid[r][c].walls.east && c < cols - 1) {
-                walls.push({ x: x + cellSize, y: y, w: wallThickness, h: cellSize + wallThickness });
+                addWallWithGaps(x + cellSize, y, wallThickness, cellSize + wallThickness, false);
             }
             if (grid[r][c].walls.south && r < rows - 1) {
-                walls.push({ x: x, y: y + cellSize, w: cellSize + wallThickness, h: wallThickness });
+                addWallWithGaps(x, y + cellSize, cellSize + wallThickness, wallThickness, true);
             }
         }
     }
 }
-
 // 2. Collision Detection for Walls
 function checkWallCollision(ent) {
     const r = ent.radius || ent.size || 20;
@@ -897,23 +900,42 @@ function spawnBot() {
     entities.push(createTank(x, y, color, botName, true));
 }
 function getBotTarget(b) {
-    let target = null, minDist = Infinity, targetType = 'none';
-    if (gameMode === 'FFA' || (player && player.team !== b.team)) {
+    let target = null, minDist = 800, targetType = '';
+    
+    // Check player - Bots attack player in FFA and MAZE
+    if (player && (gameMode === 'FFA' || gameMode === 'MAZE' || player.team !== b.team)) {
         let d = Math.hypot(player.x - b.x, player.y - b.y);
-        if (d < minDist) { target = player; minDist = d; targetType = 'tank'; }
+        if (d < minDist) {
+            target = player;
+            minDist = d;
+            targetType = 'tank';
+        }
     }
+
     entities.forEach(en => {
-        if (en.id !== b.id && (en.isShape || gameMode === 'FFA' || en.team !== b.team)) {
+        // Bots attack everything that isn't themselves in FFA and MAZE
+        if (en.id !== b.id && (en.isShape || gameMode === 'FFA' || gameMode === 'MAZE' || en.team !== b.team)) {
             let d = Math.hypot(en.x - b.x, en.y - b.y);
-            if (d < minDist) { target = en; minDist = d; targetType = en.isShape ? 'shape' : 'tank'; }
+            if (d < minDist) {
+                target = en;
+                minDist = d;
+                targetType = en.isShape ? 'shape' : 'tank';
+            }
         }
     });
+
     drones.forEach(dr => {
-        if (gameMode === 'FFA' || dr.team !== b.team) {
+        // Bots also target enemy drones
+        if (gameMode === 'FFA' || gameMode === 'MAZE' || dr.team !== b.team) {
             let d = Math.hypot(dr.x - b.x, dr.y - b.y);
-            if (d < minDist) { target = dr; minDist = d; targetType = 'drone'; }
+            if (d < minDist) {
+                target = dr;
+                minDist = d;
+                targetType = 'drone';
+            }
         }
     });
+
     return { target, targetType };
 }
 
@@ -1019,7 +1041,7 @@ function resolveCollision(a, b) {
         let ang = Math.atan2(dy, dx);
         let over = min - dist;
 
-        if (isTeammate) {
+        if (isTeammate && gameMode !== 'MAZE' && gameMode !== 'FFA') {
             // Teammates: Only apply a gentle push to separate them, no damage
             let push = over * 0.5;
             a.x -= Math.cos(ang) * push;
