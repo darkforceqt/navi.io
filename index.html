@@ -579,60 +579,120 @@ const TEAM_COLORS = {
     GREEN: '#87ff66',  // Bottom Left
     YELLOW: '#e40ee8'  // Top Right
 };
-function checkWallCollision(x, y, radius) {
-    return walls.some(wall => {
-        const closestX = Math.max(wall.x, Math.min(x, wall.x + wall.w));
-        const closestY = Math.max(wall.y, Math.min(y, wall.y + wall.h));
-        const distance = Math.hypot(x - closestX, y - closestY);
-        return distance < radius;
-    });
-}
+// 1. Maze Generation Logic
 function generateMaze() {
     walls = [];
-    const cellSize = 100;
+    if (gameMode !== 'MAZE') return;
+
+    const cellSize = 450;
     const cols = Math.floor(ARENA_SIZE / cellSize);
     const rows = Math.floor(ARENA_SIZE / cellSize);
     
-    // Create grid layout with occasional walls
-    for (let i = 0; i < cols; i++) {
-        for (let j = 0; j < rows; j++) {
-            if (Math.random() > 0.7 && 
-                !(i < 3 && j < 3) &&  // Leave spawn area clear
-                !(i > cols-4 && j > rows-4)) {
-                walls.push({
-                    x: i * cellSize,
-                    y: j * cellSize,
-                    w: cellSize,
-                    h: cellSize
-                });
+    // 1. Initialize a grid where every cell has all 4 walls
+    const grid = Array(rows).fill().map(() => Array(cols).fill().map(() => ({
+        visited: false,
+        walls: { north: true, south: true, east: true, west: true }
+    })));
+
+    const stack = [];
+    let current = { r: 0, c: 0 };
+    grid[0][0].visited = true;
+    let visitedCount = 1;
+    const totalCells = rows * cols;
+
+    // 2. Walk through the grid (Recursive Backtracker)
+    while (visitedCount < totalCells) {
+        let neighbors = [];
+        let { r, c } = current;
+
+        // Check bounds and if neighbor is unvisited
+        if (r > 0 && !grid[r - 1][c].visited) neighbors.push({ r: r - 1, c, dir: 'N' });
+        if (r < rows - 1 && !grid[r + 1][c].visited) neighbors.push({ r: r + 1, c, dir: 'S' });
+        if (c > 0 && !grid[r][c - 1].visited) neighbors.push({ r, c: c - 1, dir: 'W' });
+        if (c < cols - 1 && !grid[r][c + 1].visited) neighbors.push({ r, c: c + 1, dir: 'E' });
+
+        if (neighbors.length > 0) {
+            let next = neighbors[Math.floor(Math.random() * neighbors.length)];
+            
+            // Remove walls between current and next
+            if (next.dir === 'N') { grid[r][c].walls.north = false; grid[next.r][next.c].walls.south = false; }
+            if (next.dir === 'S') { grid[r][c].walls.south = false; grid[next.r][next.c].walls.north = false; }
+            if (next.dir === 'E') { grid[r][c].walls.east = false; grid[next.r][next.c].walls.west = false; }
+            if (next.dir === 'W') { grid[r][c].walls.west = false; grid[next.r][next.c].walls.east = false; }
+
+            grid[next.r][next.c].visited = true;
+            visitedCount++;
+            stack.push(current);
+            current = { r: next.r, c: next.c };
+        } else if (stack.length > 0) {
+            current = stack.pop();
+        } else {
+            break; // Safety break
+        }
+    }
+
+    // 3. Optional: "Navi.io" style Braiding
+    // This removes random walls to create loops (so it's not a "perfect" maze)
+    // This prevents too many dead ends without creating "caves"
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (Math.random() > 0.92) { // 8% chance to remove an extra wall
+                if (c < cols - 1) grid[r][c].walls.east = false;
+            }
+        }
+    }
+
+    // 4. Convert the grid data into actual wall objects for your game
+    const wallThickness = 30;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            let x = c * cellSize;
+            let y = r * cellSize;
+
+            // Only add East and South walls (North and West are covered by adjacent cells)
+            if (grid[r][c].walls.east && c < cols - 1) {
+                walls.push({ x: x + cellSize, y: y, w: wallThickness, h: cellSize + wallThickness });
+            }
+            if (grid[r][c].walls.south && r < rows - 1) {
+                walls.push({ x: x, y: y + cellSize, w: cellSize + wallThickness, h: wallThickness });
             }
         }
     }
 }
+
+// 2. Collision Detection for Walls
 function checkWallCollision(ent) {
-    const r = ent.radius || ent.size || 8;
+    const r = ent.radius || ent.size || 20;
+    let hit = false;
+
     walls.forEach(w => {
-        // Find closest point on wall to circle
+        // Find the closest point on the wall to the entity center
         let closestX = Math.max(w.x, Math.min(ent.x, w.x + w.w));
         let closestY = Math.max(w.y, Math.min(ent.y, w.y + w.h));
+
         let dx = ent.x - closestX;
         let dy = ent.y - closestY;
-        let distance = Math.hypot(dx, dy);
+        let distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < r) {
-            if (ent.vx !== undefined) { // If it's a bullet
-                ent.hp = 0; // Destroy bullet
-            } else { // If it's a tank
+            hit = true;
+            // Projectiles get destroyed
+            if (ent.isBullet || ent.isDrone) {
+                ent.hp = 0;
+            } else {
+                // Tanks slide against the wall
                 let overlap = r - distance;
-                let ang = Math.atan2(dy, dx);
-                ent.x += Math.cos(ang) * overlap;
-                ent.y += Math.sin(ang) * overlap;
+                if (distance === 0) return; // Prevent division by zero
+                ent.x += (dx / distance) * overlap;
+                ent.y += (dy / distance) * overlap;
             }
         }
     });
+    return hit;
 }
 function setMode(m) { 
     gameMode = m; 
+    if (m !== 'MAZE') walls = []; // Clear walls if not in Maze mode
     document.getElementById('btn-ffa').className = m === 'FFA' ? 'mode-btn active' : 'mode-btn'; 
     document.getElementById('btn-teams').className = m === 'TEAMS' ? 'mode-btn active' : 'mode-btn'; 
 }
@@ -698,20 +758,32 @@ function startGame() {
             } else { 
                 startX = ARENA_SIZE - margin; 
             }
-        } else {
+        } else if (gameMode === '4TEAMS') {
             // 4 TEAMS: Corner Logic
             if (pColor === TEAM_COLORS.BLUE) { startX = margin; startY = margin; }
             else if (pColor === TEAM_COLORS.RED) { startX = ARENA_SIZE - margin; startY = ARENA_SIZE - margin; }
             else if (pColor === TEAM_COLORS.GREEN) { startX = margin; startY = ARENA_SIZE - margin; }
             else if (pColor === TEAM_COLORS.YELLOW) { startX = ARENA_SIZE - margin; startY = margin; }
         }
-        
-    } else {
-        // FFA Logic
-        pColor = '#00b2e1';
-        startX = Math.random() * ARENA_SIZE; 
-        startY = Math.random() * ARENA_SIZE;
+        } else if (gameMode === 'MAZE') {
+            pColor = TEAM_COLORS.BLUE;
+    startX = 300; 
+    startY = 300;
+    generateMaze();
+    
+    // Create player object first
+    player = createTank(startX, startY, pColor, nameInput);
+    
+    // Check collision immediately to find a valid spot
+    for(let i=0; i<10; i++) { // Run multiple times to ensure they are pushed out of thick walls
+        checkWallCollision(player);
     }
+        } else {
+            // FFA Logic
+            pColor = '#00b2e1';
+            startX = Math.random() * ARENA_SIZE; 
+            startY = Math.random() * ARENA_SIZE;
+        }
 
     // 3. Initialize Player Object
     player = createTank(startX, startY, pColor, nameInput || "Unnamed");
@@ -788,7 +860,21 @@ function spawnBot() {
         }
         // Small horizontal jitter so they aren't in a perfect vertical line
         x += (Math.random() - 0.5) * 100;
-
+    } else if (gameMode === 'MAZE') {
+        // Inside startGame()
+    if (gameMode === 'MAZE') {
+            // FIX: Give bots a random position instead of just regenerating the maze
+        x = Math.random() * ARENA_SIZE;
+        y = Math.random() * ARENA_SIZE;
+        
+        // Ensure they don't spawn inside a wall
+        let attempts = 0;
+        while (checkWallCollision({x, y, radius: 25}) && attempts < 10) {
+            x = Math.random() * ARENA_SIZE;
+            y = Math.random() * ARENA_SIZE;
+            attempts++;
+        }
+        }
     } else if (gameMode === '4TEAMS') {
         // 4 TEAMS Logic: Keep original corner spawning
         if (color === TEAM_COLORS.BLUE) { x = margin; y = margin; }
@@ -847,6 +933,7 @@ function update() {
     if(keys['KeyW']) player.vy -= spd; if(keys['KeyS']) player.vy += spd;
     if(keys['KeyA']) player.vx -= spd; if(keys['KeyD']) player.vx += spd;
     player.vx *= 0.9; player.vy *= 0.9; player.x += player.vx; player.y += player.vy;
+    checkWallCollision(player); // Add this line
     constrain(player);
     if(player.hp < player.maxHp) player.hp += 0.025 + player.stats[0]*0.07;
     player.reload--;
@@ -864,7 +951,7 @@ function update() {
     drones.forEach((d, idx) => {
         // Check if owner is player or still exists in entities
     let owner = (player && d.ownerId === player.id) ? player : entities.find(e => e.id === d.ownerId);
-    
+    checkWallCollision(d)
     // FIX: If owner is gone, destroy the drone
     if(!owner) { 
         drones.splice(idx, 1); 
@@ -895,7 +982,7 @@ function update() {
     });
 
     entities.forEach(en => { 
-        if(!en.isShape) { updateStatLogic(en); botAI(en); en.reload--; en.x += en.vx; en.y += en.vy; en.vx *= 0.9; en.vy *= 0.9; constrain(en); } 
+        if(!en.isShape) { updateStatLogic(en); botAI(en); en.reload--; en.x += en.vx; en.y += en.vy; en.vx *= 0.9; en.vy *= 0.9; checkWallCollision(en); constrain(en); } 
         if(player) resolveCollision(player, en);
         entities.forEach(en2 => { if(en !== en2) resolveCollision(en, en2); });
     });
@@ -1228,6 +1315,13 @@ if (walls.length > 0) {
     const mBaseSize = 700 * s;  // Scaled base size for the minimap
 
     // Draw Team Bases on Minimap
+    if (gameMode === 'MAZE'){
+        // Inside the minimap drawing loop
+        mctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+        walls.forEach(w => {
+            mctx.fillRect(w.x * s, w.y * s, w.w * s, w.h * s);
+        });
+    }
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         mctx.globalAlpha = 0.3;
         if (gameMode === 'TEAMS'){
