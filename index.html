@@ -49,7 +49,7 @@
 }
 
 .game-title {
-    color: white;
+    color: rgb(235, 235, 235);
     font-size: 46px;
     margin: 0 0 10px;
     text-align: center;
@@ -252,7 +252,7 @@
     .custom-select.open .custom-options { display: block; }
 
     .custom-option {
-        padding: 12px;
+        padding: 8px;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -312,26 +312,35 @@
         </div>
 
         <div class="custom-select" id="customRegionSelect">
-            <div class="select-trigger">
-                <div class="select-label">
-                    <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle">
-                    <span>Frankfurt</span>
-                </div>
-                <i class="arrow"></i>
-            </div>
-            <div class="custom-options">
-                <div class="custom-option" data-value="frankfurt">
-                    <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle"> Frankfurt
-                </div>
-                <div class="custom-option" data-value="atlanta">
-                    <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="icon-circle"> Atlanta
-                </div>
-                <div class="custom-option" data-value="hongkong">
-                    <img src="https://image2url.com/r2/bucket1/images/1768042824933-37209d5d-6f47-4821-9d30-ea154cb06781.png" class="icon-circle"> Hong Kong
-                </div>
-            </div>
-            <input type="hidden" id="regionSelect" value="frankfurt">
+    <div class="select-trigger">
+        <div class="select-label">
+            <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle">
+            <span>Frankfurt</span>
         </div>
+        <i class="arrow"></i>
+    </div>
+    <div class="custom-options">
+        <div class="custom-option" data-value="frankfurt">
+            <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle"> Frankfurt
+        </div>
+        <div class="custom-option" data-value="atlanta">
+            <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="icon-circle"> Atlanta
+        </div>
+        <div class="custom-option" data-value="LA">
+            <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="icon-circle"> Los Angeles
+        </div>
+        <div class="custom-option" data-value="hongkong">
+            <img src="https://image2url.com/r2/bucket1/images/1768042824933-37209d5d-6f47-4821-9d30-ea154cb06781.png" class="icon-circle"> Hong Kong
+        </div>
+        <div class="custom-option" data-value="tokyo">
+            <img src="https://image2url.com/r2/bucket2/images/1768064708827-01ceabb9-42d2-42d3-abe7-c06e4e59b7b3.png" class="icon-circle"> Tokyo
+        </div>
+        <div class="custom-option" data-value="sydney">
+            <img src="https://image2url.com/r2/bucket2/images/1768064762420-ae8ca948-7c89-4f46-9176-06baef3c111b.png" class="icon-circle"> Sydney
+        </div>
+    </div>
+    <input type="hidden" id="regionSelect" value="frankfurt">
+</div>
 
         <input type="text" id="playerName" placeholder="Enter your name" maxlength="16" class="menu-input">
         <button class="spawn-btn" onclick="startGame()">Spawn</button>
@@ -343,23 +352,6 @@
             <span>WASD / Mouse</span>
             <span>E = Autofire · C = Autospin · Left Shift = Drone Repel</span>
         </div>
-    </div>
-</div>
-    <div class="custom-options">
-    <div class="custom-option" data-value="frankfurt">
-        <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="flag-circle"> Frankfurt
-    </div>
-    <div class="custom-option" data-value="atlanta">
-        <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="flag-circle"> Atlanta
-    </div>
-    <div class="custom-option" data-value="hongkong">
-        <img src="https://image2url.com/r2/bucket1/images/1768042824933-37209d5d-6f47-4821-9d30-ea154cb06781.png" class="flag-circle"> Hong Kong
-    </div>
-    <div class="custom-option" data-value="tokyo">
-        <img src="https://image2url.com/r2/bucket2/images/1768064708827-01ceabb9-42d2-42d3-abe7-c06e4e59b7b3.png" class="flag-circle"> Tokyo
-    </div>
-    <div class="custom-option" data-value="sydney">
-        <img src="https://image2url.com/r2/bucket2/images/1768064762420-ae8ca948-7c89-4f46-9176-06baef3c111b.png" class="flag-circle"> Sydney
     </div>
 </div>
     <input type="hidden" id="regionSelect" value="frankfurt">
@@ -488,6 +480,17 @@ const REGION_NAMES = {
         "shadow", "hunter", "Ace", "Novaa", "United Kingdom", "London", "Ghost", "Sniper", "Wolf", "King", "God", "Demon", "Slayer", "Warrior", "Legend", "Pro", "Noob", "toxic", "salty", "chill", "vibe", "EU_Player", "Global", "Elite", "Titan", "Raptor", "Dragon", "Storm", "Frost", "Flame", "Chaos", "Order", "Victory", "Defeat", "Revenge", "Mercy", "Justice", "Power", "Speed", "Skill", "Luck", "Fate", "Destiny", "Doom", "Eternal", "Infinite", "Zero", "One", "Omega", "Alpha"
     ],
     atlanta: [
+        // English
+        "Rex", "andriel", "Ghost titan", "Killer", "mink", "Vortex", "Alpha", "light", "Sky", "ppppppppp", "Mexico", "USA", "Canada", "Texas", "California", "Florida Man", "Burger", "Eagle", "Liberty", "Freedom", "No Lag", "High Ping", "GamerTag", "Sweat", "Clutch", "Default", "Bot", "Hacker", "Admin", "Mod", "Twitch_Tv", "YT_Gamer", "Tiktok", "Viral", "Sigma", "Rizz", "Skibidi", "Ohio", "Deadly", "Silent", "Savage", "Beast", "Monster", "Alien", "Space", "Galaxy", "Mars", "Earth", "Moon", "Star", "B+ is F", "Kim Jong Un", "Squid Game", "Solo Leveling",
+        // Spanish
+        "Carlos", "José", "Mateo", "MADURO", "Diego", "ADIOS MADURO", "El Pro", "GamerLatino", "Mexico777", "Chavo", "Don Ramon", "Messi", "Cristiano", "Futbol", "GOL", "Rey", "Fuego", "Agua", "Tierra", "Aire", "Juan", "Luis", "Angel", "Javier", "Paco", "Taco", "Burrito", "Salsa", "Picante", "Amigo", "Hermano", "Primo", "Tio", "Abuelo", "Loco", "Tranquilo", "Rapido", "Fuerte", "Grande", "Pequeño", "Muerte", "Vida", "Sol", "Luna", "Estrella", "Nube", "Rayo", "Trueno", "Viento", "Tormenta",
+        "Milei AFUERA", "Cartel Leader", "Taco Bell", "La Migra", "Viva Mexico", "El Diablo", "Che Guevara", "Boca Shaka Laka", "Latino Power",
+        // Brazilian
+        "Thiago", "lucas", "Felipe", "gabriel", "Brasil", "GD", "Bolsonaro2027", "Lula", "Neymar", "Ronaldinho", "Pelé", "Favela", "Carioca", "Paulista", "BR_PRO", "HUEHUE", "Kkkk", "Mano", "Cara", "Guri", "Moleque", "Zueira", "Mito", "Lenda", "Rei do Gado", "Coxinha", "Pao de Queijo", "Samba", "Carnaval", "Flamengo", "Corinthians", "Palmeiras", "Vasco", "Santos", "Gremio", "Inter", "Cruzeiro", "Galo", "Botafogo", "Fluminense", "Bahia", "Vitoria", "Sport", "Ceara", "Fortaleza", "Goias", "Coritiba", "Parana", "Avaí", "Chape",
+        // Clan Tags/Misc
+        "[ACE]", "[GOD]", "[PRO]", "[YT]", "[TT]", "[FB]", "Clan_Leader", "Member", "Soldier", "Captain", "General", "Major", "Colonel", "Sergeant", "Private", "Recruit", "Veteran", "Survivor", "Warrior", "Knight", "Paladin", "Rogue", "Mage", "Healer", "Tank", "DPS", "Support", "Carry", "Feeder", "CarryMe", "Solo", "Team", "Unity", "Force", "Squad", "Gang", "Mafia", "Cartel", "Family", "Brothers", "Sisters", "Friends", "Enemies", "Rivals", "Legends", "Heroes", "Villains", "Monsters", "Demons", "Angels"
+    ],
+    LA: [
         // English
         "Rex", "andriel", "Ghost titan", "Killer", "mink", "Vortex", "Alpha", "light", "Sky", "ppppppppp", "Mexico", "USA", "Canada", "Texas", "California", "Florida Man", "Burger", "Eagle", "Liberty", "Freedom", "No Lag", "High Ping", "GamerTag", "Sweat", "Clutch", "Default", "Bot", "Hacker", "Admin", "Mod", "Twitch_Tv", "YT_Gamer", "Tiktok", "Viral", "Sigma", "Rizz", "Skibidi", "Ohio", "Deadly", "Silent", "Savage", "Beast", "Monster", "Alien", "Space", "Galaxy", "Mars", "Earth", "Moon", "Star", "B+ is F", "Kim Jong Un", "Squid Game", "Solo Leveling",
         // Spanish
@@ -827,6 +830,11 @@ function startGame() {
     for(let i=0; i < baseBotCount; i++) {
         spawnBot();
     }
+    const NameInput = document.getElementById('playerName');
+    const playerName = NameInput.value.trim() || "";
+    
+    // Save the name to local storage
+    localStorage.setItem('savedPlayerName', playerName);
 }
 
 function spawnShape() {
@@ -898,6 +906,7 @@ function spawnBot() {
     const botName = regionPool[Math.floor(Math.random() * regionPool.length)];
 
     entities.push(createTank(x, y, color, botName, true));
+    
 }
 function getBotTarget(b) {
     let target = null, minDist = 800, targetType = '';
@@ -1437,6 +1446,14 @@ window.addEventListener('keyup', e => keys[e.code] = false);
 window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; if(player && !autoSpin) player.angle = Math.atan2((e.clientY-canvas.height/2)/currentZoom, (e.clientX-canvas.width/2)/currentZoom); });
 window.addEventListener('mousedown', () => { if(gameState === 'PLAYING' && player) fire(player); });
 window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+window.addEventListener('DOMContentLoaded', () => {
+    const savedName = localStorage.getItem('savedPlayerName');
+    const nameInput = document.getElementById('playerName');
+    
+    if (savedName && nameInput) {
+        nameInput.value = savedName;
+    }
+});
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 render();
 </script>
