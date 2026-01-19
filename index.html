@@ -281,6 +281,25 @@
         transition: transform 0.3s;
     }
     .custom-select.open .arrow { transform: rotate(-135deg); }
+        #minimap-header {
+    position: absolute;
+    bottom: 175px; /* Positioned above the 150px minimap + 20px bottom margin */
+    right: 20px;
+    text-align: right;
+    color: white;
+    pointer-events: none;
+    font-family: 'Ubuntu', sans-serif;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+#minimap-header .brand {
+    font-size: 20px;
+    font-weight: 700;
+}
+#minimap-header .count {
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 0.9;
+}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async="" defer=""></script>
 <meta property="og:title" content="File" data-id="th-modified"><meta name="description" content="game" data-id="th-modified"><meta property="og:description" content="game" data-id="th-modified"><meta property="og:image" content="https://tiiny.host/assets/logo-purple-bg.png" data-id="th-modified"><meta property="og:url" content="https://navi.tiiny.site/" data-id="th-modified"><meta property="og:type" content="website" data-id="th-modified"></head>
@@ -393,6 +412,10 @@
         <div id="upgrades" class="hidden"><div style="color: #ffeb3b; font-size: 14px; font-weight:bold;">Points: <span id="pt-count">0</span></div><div id="stat-list"></div></div>
         <div id="leaderboard" class="hidden"></div>
         <div id="hud-bottom" class="hidden"><div id="tank-name-display" style="color:white; font-weight:bold;"></div><div class="progress-container"><div id="xp-bar"></div></div><div id="lvl-txt" style="color:white; font-size:12px;">Level 1</div></div>
+        <div id="minimap-header" class="hidden">
+    <div class="brand">navi.io</div>
+    <div class="count"><span id="total-player-count">0</span> players</div>
+</div>
         <div id="minimap" class="hidden"><canvas id="minimapCanvas" width="150" height="150"></canvas></div>
         <div id="mobile-controls">
             <div id="joystick-base"><div id="joystick-stick"></div></div>
@@ -1433,7 +1456,64 @@ function resetToMenu() { // Show the menu and hide the HUD
 const joyBase = document.getElementById('joystick-base');
 const joyStick = document.getElementById('joystick-stick');
 const fireBtn = document.getElementById('mobile-fire');
+(function() {
+    // Logic based on your bot population code
+    const base = 24;
+    const modes = 4;
+    
+    // Summing up all regions: 3 standard + Tokyo (0.8) + Sydney (0.3) + Atlanta (1.5)
+    const frankfurt = base * modes;
+    const la = base * modes;
+    const hongkong = base * modes;
+    const tokyo = Math.floor(base * 0.8) * modes;
+    const sydney = Math.floor(base * 0.3) * modes;
+    const atlanta = Math.floor(base * 1.5) * modes;
+    
+    const initialTotal = frankfurt + la + hongkong + tokyo + sydney + atlanta; // 536
+    let currentDisplayCount = initialTotal;
+    
+    const countSpan = document.getElementById('total-player-count');
+    const headerDiv = document.getElementById('minimap-header');
 
+    function updateCounter() {
+        // Random change 1-10
+        const change = Math.floor(Math.random() * 10) + 1;
+        
+        // Randomly add or subtract
+        if (Math.random() > 0.5) {
+            currentDisplayCount += change;
+        } else {
+            currentDisplayCount -= change;
+        }
+
+        // Clamp: Min = initial, Max = initial + 90
+        if (currentDisplayCount < initialTotal) currentDisplayCount = initialTotal;
+        if (currentDisplayCount > initialTotal + 90) currentDisplayCount = initialTotal + 90;
+
+        countSpan.innerText = currentDisplayCount.toLocaleString();
+
+        // Random interval 8-16 seconds
+        const nextInterval = Math.floor(Math.random() * (16000 - 8000 + 1)) + 8000;
+        setTimeout(updateCounter, nextInterval);
+    }
+
+    // Initialize
+    countSpan.innerText = initialTotal.toLocaleString();
+    updateCounter();
+
+    // Show/Hide hooks for your existing game flow
+    const originalStart = window.startGame;
+    window.startGame = function() {
+        if (originalStart) originalStart();
+        headerDiv.classList.remove('hidden');
+    };
+
+    const originalReset = window.resetToMenu;
+    window.resetToMenu = function() {
+        if (originalReset) originalReset();
+        headerDiv.classList.add('hidden');
+    };
+})();
 joyBase.addEventListener('touchstart', e => {
     const touch = e.touches[0]; const rect = joyBase.getBoundingClientRect();
     joystick.active = true; joystick.startX = rect.left + rect.width / 2; joystick.startY = rect.top + rect.height / 2;
