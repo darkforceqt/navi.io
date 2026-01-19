@@ -475,6 +475,9 @@ const REGION_NAMES = fetch("./names.json")
                 }
                 return response.json();
             })
+    .then(data => {
+        return data
+    })
 console.log("REGION_NAMES")
 let kills = 0;
 let gameStartTime = 0;
