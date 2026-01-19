@@ -1514,6 +1514,33 @@ const fireBtn = document.getElementById('mobile-fire');
         headerDiv.classList.add('hidden');
     };
 })();
+    window.networkStats = { frankfurt: 0, atlanta: 0, LA: 0, hongkong: 0, tokyo: 0, sydney: 0 };
+    let currentPing = 0; // The active delay for the game
+
+    async function updateGlobalPings() {
+        const endpoints = {
+            frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
+            atlanta: "https://dynamodb.us-east-1.amazonaws.com",
+            LA: "https://dynamodb.us-west-2.amazonaws.com",
+            hongkong: "https://dynamodb.ap-east-1.amazonaws.com",
+            tokyo: "https://dynamodb.ap-northeast-1.amazonaws.com",
+            sydney: "https://dynamodb.ap-southeast-2.amazonaws.com"
+        };
+
+        const promises = Object.entries(endpoints).map(async ([key, url]) => {
+            const start = performance.now();
+            try {
+                await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
+                const end = performance.now();
+                window.networkStats[key] = Math.round(end - start);
+                console.log(`Ping to ${key}: ${window.networkStats[key]}ms`);
+            } catch (e) {
+                window.networkStats[key] = 300; // Default fallback for errors
+            }
+        });
+        await Promise.all(promises);
+    }
+    updateGlobalPings();
 joyBase.addEventListener('touchstart', e => {
     const touch = e.touches[0]; const rect = joyBase.getBoundingClientRect();
     joystick.active = true; joystick.startX = rect.left + rect.width / 2; joystick.startY = rect.top + rect.height / 2;
@@ -1535,10 +1562,37 @@ window.addEventListener('touchend', e => { if(e.touches.length === 0) { joystick
 fireBtn.addEventListener('touchstart', () => mobileFireActive = true);
 fireBtn.addEventListener('touchend', () => mobileFireActive = false);
 
-window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'KeyE') autoFire = !autoFire; if(e.code === 'KeyC') autoSpin = !autoSpin; });
-window.addEventListener('keyup', e => keys[e.code] = false);
-window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; if(player && !autoSpin) player.angle = Math.atan2((e.clientY-canvas.height/2)/currentZoom, (e.clientX-canvas.width/2)/currentZoom); });
-window.addEventListener('mousedown', () => { if(gameState === 'PLAYING' && player) fire(player); });
+window.addEventListener('keydown', e => { 
+        setTimeout(() => {
+            keys[e.code] = true; 
+            if(e.code === 'KeyE') autoFire = !autoFire; 
+            if(e.code === 'KeyC') autoSpin = !autoSpin;
+        }, currentPing);
+    });
+window.addEventListener('keyup', e => {
+        setTimeout(() => {
+            keys[e.code] = false;
+        }, currentPing);
+    });
+// Mouse Aiming
+    window.addEventListener('mousemove', e => { 
+        const mx = e.clientX;
+        const my = e.clientY;
+        
+        setTimeout(() => {
+            mouse.x = mx; 
+            mouse.y = my; 
+            if(player && !autoSpin) {
+                player.angle = Math.atan2((my - canvas.height/2)/currentZoom, (mx - canvas.width/2)/currentZoom);
+            }
+        }, currentPing);
+    });
+// Firing (Click)
+    window.addEventListener('mousedown', () => { 
+        setTimeout(() => {
+            if(gameState === 'PLAYING' && player) fire(player); 
+        }, currentPing);
+    });
 window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 window.addEventListener('DOMContentLoaded', () => {
     const savedName = localStorage.getItem('savedPlayerName');
