@@ -468,17 +468,19 @@ const ctx = canvas.getContext('2d');
 const mCanvas = document.getElementById('minimapCanvas');
 const mctx = mCanvas.getContext('2d');
 const ARENA_SIZE = 4500;
-const REGION_NAMES = fetch("./names.json")
-    .then(response => {
-                if (!response.ok) {
-                    throw new Error("HTTP error " + response.status);
-                }
-                return response.json();
-            })
-    .then(data => {
-        return data
-    })
-console.log(REGION_NAMES)
+async function getNames() {
+    const response = await fetch("./names.json");
+    if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+    }
+    const data = await response.json();
+    
+    console.log(data); // This will show the actual JSON content
+    return data;
+}
+
+
+const REGION_NAMES = getNames();
 let kills = 0;
 let gameStartTime = 0;
 const TANK_TYPES = {
