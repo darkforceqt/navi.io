@@ -1515,7 +1515,7 @@ const fireBtn = document.getElementById('mobile-fire');
     };
 })();
     window.networkStats = { frankfurt: 0, atlanta: 0, LA: 0, hongkong: 0, tokyo: 0, sydney: 0 };
-    let currentPing = 0; // The active delay for the game
+    let currentPing = 100; // The active delay for the game
 
     async function updateGlobalPings() {
         const endpoints = {
