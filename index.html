@@ -1576,6 +1576,7 @@ window.addEventListener('keyup', e => {
     });
 // Mouse Aiming
     window.addEventListener('mousemove', e => { 
+        currentPing = window.networkStats[document.getElementById("regionSelect").value];
         const mx = e.clientX;
         const my = e.clientY;
         
