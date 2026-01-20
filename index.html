@@ -1605,6 +1605,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 render();
+setTimeout(()=>{
+    updateGlobalPings();
+}, currentPing*100);
 </script>
 
 </body></html>
