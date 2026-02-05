@@ -418,7 +418,9 @@
         <input type="text" id="playerName" placeholder="Enter your name" maxlength="16" class="menu-input">
 
         <button class="spawn-btn" onclick="startGame()">Spawn</button>
-
+        <button id="copyPartyBtn" class="spawn-btn show-button" style="background: #444; margin-top: 5px;" onclick="copyPartyLink()">
+    Copy Party Link
+</button>
         <div class="menu-footer">
             <span>WASD / Mouse</span>
             <span>E = Autofire · C = Autospin</span>
@@ -455,8 +457,90 @@
             <div id="joystick-base"><div id="joystick-stick"></div></div>
             <div id="mobile-fire"></div>
         </div>
-    
+<script>// 1. Configuration Mapping for URL parsing
+const urlRegionMap = {
+    'fra': 'frankfurt',
+    'atl': 'atlanta',
+    'lax': 'LA',
+    'hkg': 'hongkong',
+    'tok': 'tokyo',
+    'syd': 'sydney'
+};
 
+const urlModeMap = {
+    'f': 'FFA',
+    '2': 'TEAMS',
+    '4': '4TEAMS',
+    'm': 'MAZE'
+};
+
+const teamColorMap = {
+    'bl': '#00b2e1', // Blue
+    're': '#f14e54', // Red
+    'gr': '#73c176', // Green
+    'pu': '#bf7ff5'  // Purple
+};
+
+// 2. Main function to parse URL and update UI/State
+function parseLobbyUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const lobby = params.get('lobby');
+    const teamParam = params.get('team');
+
+    if (!lobby) return;
+
+    // Example lobby: fraf-5419585530.navi.io:3000
+    // Parts: [fra][f] - [id]
+    const regionCode = lobby.substring(0, 3);
+    const modeCode = lobby.substring(3, 4);
+    
+    const targetRegion = urlRegionMap[regionCode];
+    const targetMode = urlModeMap[modeCode];
+
+    if (targetRegion) {
+        updateDropdownSelection('customRegionSelect', targetRegion);
+    }
+
+    if (targetMode) {
+        updateDropdownSelection('modeDropdown', targetMode);
+        // Set the global gameMode variable
+        if (typeof gameMode !== 'undefined') gameMode = targetMode;
+    }
+
+    // Pre-assign team if specified
+    if (teamParam && teamColorMap[teamParam]) {
+        // We create a global variable that startGame() will check
+        window.preAssignedTeam = teamColorMap[teamParam];
+        console.log("Team pre-assigned:", window.preAssignedTeam);
+    }
+}
+
+// 3. Helper to update your custom dropdown UI visually
+function updateDropdownSelection(containerId, value) {
+    const container = document.getElementById(containerId);
+    const hiddenInput = container.querySelector('input[type="hidden"]');
+    const label = container.querySelector('.select-label');
+    const option = container.querySelector(`.custom-option[data-value="${value}"]`);
+
+    if (option) {
+        hiddenInput.value = value;
+        label.innerHTML = option.innerHTML;
+        label.className = option.className.replace('custom-option', 'select-label');
+    }
+}
+
+// 4. Update your existing startGame function
+// Locate your startGame() and add this logic at the start of the team assignment:
+/* Inside startGame():
+   if (window.preAssignedTeam && (gameMode === 'TEAMS' || gameMode === '4TEAMS')) {
+       pColor = window.preAssignedTeam;
+   } else {
+       // ... existing auto-balance logic ...
+   }
+*/
+
+// Run on load
+window.addEventListener('DOMContentLoaded', parseLobbyUrl);</script>
 <script>
     function onTurnstileSuccess(token) {
     // 1. Wait 1 second after "Success!" appears
@@ -477,7 +561,55 @@
         console.log("Verification successful. Spawn button enabled.");
     }, 1000);
 }
+function copyPartyLink() {
+    const mode = document.getElementById('modeSelect').value; // e.g., "FFA", "TEAMS"
+    const regionRaw = document.getElementById('regionSelect').value; // e.g., "frankfurt", "LA"
+    
+    // Mapping for region codes
+    const regionCodes = {
+        frankfurt: 'fra',
+        atlanta: 'atl',
+        LA: 'lax',
+        hongkong: 'hkg',
+        tokyo: 'tok',
+        sydney: 'syd'
+    };
+    
+    const rCode = regionCodes[regionRaw] || 'fra';
+    const randomId = Math.floor(Math.random() * 9000000000) + 1000000000;
+    const baseUrl = window.location.origin + window.location.pathname;
+    
+    let lobbyParam = "";
+    let teamParam = "";
 
+    // Formatting based on requested examples
+    if (mode === 'FFA') {
+        lobbyParam = `?lobby=${rCode}f-${randomId}.navi.io:3000`;
+    } else if (mode === 'TEAMS') {
+        lobbyParam = `?lobby=${rCode}2-${randomId}.navi.io:3000`;
+        teamParam = "&team=bl"; // Example blue team
+    } else if (mode === '4TEAMS') {
+        lobbyParam = `?lobby=${rCode}4-${randomId}.navi.io:3000`;
+        teamParam = "&team=pu"; // Example purple team
+    } else if (mode === 'MAZE') {
+        lobbyParam = `?lobby=${rCode}m-${randomId}.navi.io:3000`;
+    }
+
+    const fullLink = baseUrl + lobbyParam + teamParam;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(fullLink).then(() => {
+        const btn = document.getElementById('copyPartyBtn');
+        const originalText = btn.innerText;
+        btn.innerText = "Link Copied!";
+        btn.style.background = "#73c176"; // Green feedback
+        
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "#444";
+        }, 2000);
+    });
+}
 function setupCustomDropdown(containerId) {
     const container = document.getElementById(containerId);
     const trigger = container.querySelector('.select-trigger');
@@ -808,6 +940,9 @@ function startGame() {
     const margin = 300;
 
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
+        if (window.preAssignedTeam) {
+        pColor = window.preAssignedTeam;
+    } else {
         const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
         if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
         
@@ -839,7 +974,7 @@ function startGame() {
     startX = 300; 
     startY = 300;
     generateMaze();
-    
+    }
     // Create player object first
     player = createTank(startX, startY, pColor, nameInput);
     
@@ -904,6 +1039,7 @@ function startGame() {
     // Save the name to local storage
     localStorage.setItem('savedPlayerName', playerName);
 }
+
 
 function spawnShape() {
     const r = Math.random(); 
