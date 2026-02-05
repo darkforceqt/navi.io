@@ -334,29 +334,6 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="ui-layer">
-        <div id="auth-modal" class="modal-overlay">
-    <div class="menu-card auth-card">
-        <h1 class="game-title">Login</h1>
-        <div id="auth-error" style="color: #ff6b6b; font-size: 12px; text-align: center; display: none;"></div>
-        
-        <input type="email" id="auth-email" placeholder="Email" class="menu-input">
-        <input type="password" id="auth-password" placeholder="Password" class="menu-input">
-        
-        <div class="auth-buttons">
-            <button class="spawn-btn show-button" onclick="handleAuth('signin')">Sign In</button>
-            <button class="death-btn" onclick="handleAuth('signup')" style="margin-top:5px; width:100%">Create Account</button>
-        </div>
-
-        <div style="text-align: center; margin: 10px 0; color: #888;">OR</div>
-
-        <button class="google-btn" onclick="loginWithGoogle()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
-            Login with Google
-        </button>
-
-        <button class="death-btn" onclick="closeAuth()" style="margin-top: 15px; background: transparent; color: #888;">Play as Guest</button>
-    </div>
-</div>
 
 <div id="coin-display" class="hidden" style="position: absolute; top: 20px; left: 20px; color: #ffd700; font-weight: bold; font-size: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); pointer-events: none;">
     🪙 <span id="user-coins">0</span>
@@ -421,10 +398,8 @@
     <input type="hidden" id="regionSelect" value="frankfurt">
 </div>
 
-        <input type="text" id="playerName" placeholder="Enter your name" maxlength="16" class="menu-input">
-        <button class="death-btn" onclick="openAuth()" style="width: 100%; margin-bottom: 10px; background: #333;">
-    Login / Account
-</button>
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" class="menu-input">
+        
 <button class="spawn-btn" onclick="startGame()">Play!</button>
         <div class="cf-turnstile" 
             data-sitekey="0x4AAAAAACL3tHxKP9xDWcuv" 
@@ -501,91 +476,7 @@
         console.log("Verification successful. Spawn button enabled.");
     }, 1000);
 }
-    // 1. Initialize Supabase
-const SUPABASE_URL = 'https://jnlbetoojfubblbkcbwr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_GESQ4HVXehQ3ssSfci_7lw_ehuV8UfY';
-const supabaseC = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null;
-let userCoins = 0;
-
-// 2. Auth Functions
-async function handleAuth(type) {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    const errorDiv = document.getElementById('auth-error');
-
-    const { data, error } = type === 'signup' 
-        ? await supabaseC.auth.signUp({ email, password })
-        : await supabaseC.auth.signInWithPassword({ email, password });
-
-    if (error) {
-        errorDiv.innerText = error.message;
-        errorDiv.style.display = 'block';
-    } else if (type === 'signup') {
-        alert("Verification email sent! Please check your inbox.");
-    }
-}
-
-async function loginWithGoogle() {
-    await supabaseC.auth.signInWithOAuth({ provider: 'google' });
-}
-
-function openAuth() {
-    // Hide the main menu and show the login modal
-    document.getElementById('menu-screen').style.display = 'none';
-    document.getElementById('auth-modal').style.display = 'flex';
-}
-
-function closeAuth() {
-    // Hide the modal and show the main menu again
-    document.getElementById('auth-modal').style.display = 'none';
-    document.getElementById('menu-screen').style.display = 'flex';
-}
-
-// 3. Data Management
-async function syncUserData(user) {
-    if (!user) return;
-    currentUser = user;
-    
-    // Fetch user profile (coins)
-    let { data: profile, error } = await supabaseC
-        .from('profiles')
-        .select('coins')
-        .eq('id', user.id)
-        .single();
-
-    if (!profile) {
-        // Create profile if it doesn't exist
-        const { data } = await supabase.from('profiles').insert([{ id: user.id, email: user.email, coins: 0 }]).select().single();
-        profile = data;
-    }
-    document.getElementById('user-coins').innerText = userCoins;
-    document.getElementById('coin-display').classList.remove('hidden');
-    userCoins = profile ? profile.coins : 0;
-    document.getElementById('user-coins').innerText = userCoins;
-    document.getElementById('coin-display').classList.remove('hidden');
-    closeAuth();
-}
-
-// Save coins after match (Add this to your existing death logic)
-async function addCoins(amount) {
-    if (!currentUser) return;
-    userCoins += amount;
-    document.getElementById('user-coins').innerText = userCoins;
-    
-    await supabaseC
-        .from('profiles')
-        .update({ coins: userCoins })
-        .eq('id', currentUser.id);
-}
-
-// 4. Auth State Listener
-supabaseC.auth.onAuthStateChange((event, session) => {
-    if (session?.user) {
-        syncUserData(session.user);
-    }
-});
 function setupCustomDropdown(containerId) {
     const container = document.getElementById(containerId);
     const trigger = container.querySelector('.select-trigger');
