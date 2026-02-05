@@ -933,113 +933,103 @@ function startGame() {
     // 1. Get Selections from UI
     gameMode = document.getElementById("modeSelect").value;
     selectedRegion = document.getElementById("regionSelect").value;
-    const nameInput = document.getElementById('playerName').value;
+    const nameInput = document.getElementById('playerName').value.trim() || "Unnamed";
     
+    // Save the name to local storage immediately
+    localStorage.setItem('savedPlayerName', nameInput);
+
     // 2. Setup Player Positioning and Color
     let startX, startY, pColor;
     const margin = 300;
 
+    // Reset Game World Arrays early to prevent count errors during team balancing
+    entities = []; 
+    bullets = []; 
+    drones = []; 
+
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         if (window.preAssignedTeam) {
-        pColor = window.preAssignedTeam;
-    } else {
-        const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
-        if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
-        
-        // Simple auto-balance: join the team with the fewest players
-        const counts = teams.map(c => ({
-            color: c, 
-            count: entities.filter(e => !e.isShape && e.team === c).length
-        }));
-        pColor = counts.sort((a, b) => a.count - b.count)[0].color;
-        
-        // Team Spawning Logic
+            pColor = window.preAssignedTeam;
+        } else {
+            const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
+            if (gameMode === '4TEAMS') teams.push(TEAM_COLORS.GREEN, TEAM_COLORS.YELLOW);
+            
+            // Auto-balance: join the team with the fewest players
+            const counts = teams.map(c => ({
+                color: c, 
+                count: entities.filter(e => !e.isShape && e.team === c).length
+            }));
+            pColor = counts.sort((a, b) => a.count - b.count)[0].color;
+        }
+
+        // Positioning Logic
         if (gameMode === 'TEAMS') {
-            // 2 TEAMS: Random Y position along the X-threshold
             startY = Math.random() * ARENA_SIZE;
-            if (pColor === TEAM_COLORS.BLUE) { 
-                startX = margin; 
-            } else { 
-                startX = ARENA_SIZE - margin; 
-            }
-        } else if (gameMode === '4TEAMS') {
-            // 4 TEAMS: Corner Logic
+            startX = (pColor === TEAM_COLORS.BLUE) ? margin : ARENA_SIZE - margin;
+        } else {
+            // 4TEAMS Corner Logic
             if (pColor === TEAM_COLORS.BLUE) { startX = margin; startY = margin; }
             else if (pColor === TEAM_COLORS.RED) { startX = ARENA_SIZE - margin; startY = ARENA_SIZE - margin; }
             else if (pColor === TEAM_COLORS.GREEN) { startX = margin; startY = ARENA_SIZE - margin; }
             else if (pColor === TEAM_COLORS.YELLOW) { startX = ARENA_SIZE - margin; startY = margin; }
         }
-        } else if (gameMode === 'MAZE') {
-            pColor = TEAM_COLORS.BLUE;
-    startX = 300; 
-    startY = 300;
-    generateMaze();
+    } else if (gameMode === 'MAZE') {
+        pColor = TEAM_COLORS.BLUE;
+        startX = 300; 
+        startY = 300;
+        generateMaze();
+    } else {
+        // FFA Logic
+        pColor = '#00b2e1';
+        startX = Math.random() * ARENA_SIZE; 
+        startY = Math.random() * ARENA_SIZE;
     }
-    // Create player object first
-    player = createTank(startX, startY, pColor, nameInput);
-    
-    // Check collision immediately to find a valid spot
-    for(let i=0; i<10; i++) { // Run multiple times to ensure they are pushed out of thick walls
-        checkWallCollision(player);
-    }
-        } else {
-            // FFA Logic
-            pColor = '#00b2e1';
-            startX = Math.random() * ARENA_SIZE; 
-            startY = Math.random() * ARENA_SIZE;
-        }
 
     // 3. Initialize Player Object
-    player = createTank(startX, startY, pColor, nameInput || "Unnamed");
+    player = createTank(startX, startY, pColor, nameInput);
     
-    // Set starting level to 45 with corresponding skill points
+    // Immediate collision check (especially important for MAZE mode)
+    if (gameMode === 'MAZE') {
+        for(let i = 0; i < 10; i++) {
+            checkWallCollision(player);
+        }
+    }
+    
+    // Progression Setup
     player.score = getScoreForLevel(45);
     player.level = 45;
     player.skillPoints = 44;
 
-    // 4. Reset Game World
-    entities = []; 
-    bullets = []; 
-    drones = []; 
+    // 4. Reset Game State
     kills = 0;
-    // Hide the menu and show the HUD
-    document.getElementById('menu-screen').style.display = 'none';
-    document.getElementById('minimap').classList.remove('hidden');
-    document.getElementById('hud-bottom').classList.remove('hidden');
-    document.getElementById('leaderboard').classList.remove('hidden');
     gameState = 'PLAYING';
     gameStartTime = Date.now();
     lastTime = performance.now(); 
 
-    // 5. Update UI
+    // 5. Update UI Visibility
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('death-screen').style.display = 'none';
+    document.getElementById('minimap').classList.remove('hidden');
+    document.getElementById('hud-bottom').classList.remove('hidden');
+    document.getElementById('leaderboard').classList.remove('hidden');
+    
     initStatsUI();
     updateUI();
 
     // 6. Spawn World Objects
-    for(let i=0; i<450; i++) spawnShape();
+    for(let i = 0; i < 450; i++) spawnShape();
     
-    // 7. Calculate and Spawn Bots based on Region Population
+    // 7. Regional Bot Balancing
     let baseBotCount = 24;
-    if (selectedRegion === 'tokyo') {
-        baseBotCount = Math.floor(baseBotCount * 0.8);
-    } else if (selectedRegion === 'sydney') {
-        baseBotCount = Math.floor(baseBotCount * 0.3);
-    } else if (selectedRegion === 'atlanta') {
-        baseBotCount = Math.floor(baseBotCount * 1.5);
+    const regionModifiers = { 'tokyo': 0.8, 'sydney': 0.3, 'atlanta': 1.5 };
+    if (regionModifiers[selectedRegion]) {
+        baseBotCount = Math.floor(baseBotCount * regionModifiers[selectedRegion]);
     }
     
-    for(let i=0; i < baseBotCount; i++) {
+    for(let i = 0; i < baseBotCount; i++) {
         spawnBot();
     }
-    const NameInput = document.getElementById('playerName');
-    const playerName = NameInput.value.trim() || "";
-    
-    // Save the name to local storage
-    localStorage.setItem('savedPlayerName', playerName);
 }
-
 
 function spawnShape() {
     const r = Math.random(); 
