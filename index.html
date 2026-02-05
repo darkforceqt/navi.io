@@ -486,7 +486,7 @@
     // 1. Initialize Supabase
 const SUPABASE_URL = 'https://jnlbetoojfubblbkcbwr.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GESQ4HVXehQ3ssSfci_7lw_ehuV8UfY';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseC = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let userCoins = 0;
@@ -498,8 +498,8 @@ async function handleAuth(type) {
     const errorDiv = document.getElementById('auth-error');
 
     const { data, error } = type === 'signup' 
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
+        ? await supabaseC.auth.signUp({ email, password })
+        : await supabaseC.auth.signInWithPassword({ email, password });
 
     if (error) {
         errorDiv.innerText = error.message;
@@ -510,7 +510,7 @@ async function handleAuth(type) {
 }
 
 async function loginWithGoogle() {
-    await supabase.auth.signInWithOAuth({ provider: 'google' });
+    await supabaseC.auth.signInWithOAuth({ provider: 'google' });
 }
 
 function closeAuth() {
@@ -523,7 +523,7 @@ async function syncUserData(user) {
     currentUser = user;
     
     // Fetch user profile (coins)
-    let { data: profile, error } = await supabase
+    let { data: profile, error } = await supabaseC
         .from('profiles')
         .select('coins')
         .eq('id', user.id)
@@ -547,14 +547,14 @@ async function addCoins(amount) {
     userCoins += amount;
     document.getElementById('user-coins').innerText = userCoins;
     
-    await supabase
+    await supabaseC
         .from('profiles')
         .update({ coins: userCoins })
         .eq('id', currentUser.id);
 }
 
 // 4. Auth State Listener
-supabase.auth.onAuthStateChange((event, session) => {
+supabaseC.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
         syncUserData(session.user);
     }
