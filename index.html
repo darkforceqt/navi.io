@@ -445,9 +445,10 @@
         <div id="upgrades" class="hidden"><div style="color: #ffeb3b; font-size: 14px; font-weight:bold;">Points: <span id="pt-count">0</span></div><div id="stat-list"></div></div>
         <div id="leaderboard" class="hidden"></div>
         <div id="hud-bottom" class="hidden"><div id="tank-name-display" style="color:white; font-weight:bold;"></div><div class="progress-container"><div id="xp-bar"></div></div><div id="lvl-txt" style="color:white; font-size:12px;">Level 1</div></div>
-        <div id="minimap-header" class="hidden">
+       <div id="minimap-header" class="hidden">
     <div class="brand">navi.io</div>
     <div class="count"><span id="total-player-count">0</span> players</div>
+    <div id="ping-display" class="count">0.0 ms fra</div>
 </div>
         <div id="minimap" class="hidden"><canvas id="minimapCanvas" width="150" height="150"></canvas></div>
         <div id="mobile-controls">
@@ -1551,30 +1552,57 @@ const fireBtn = document.getElementById('mobile-fire');
     window.networkStats = { frankfurt: 0, atlanta: 0, LA: 0, hongkong: 0, tokyo: 0, sydney: 0 };
     let currentPing = 100; // The active delay for the game
 
-    async function updateGlobalPings() {
-        const endpoints = {
-            frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
-            atlanta: "https://dynamodb.us-east-1.amazonaws.com",
-            LA: "https://dynamodb.us-west-2.amazonaws.com",
-            hongkong: "https://dynamodb.ap-east-1.amazonaws.com",
-            tokyo: "https://dynamodb.ap-northeast-1.amazonaws.com",
-            sydney: "https://dynamodb.ap-southeast-2.amazonaws.com"
-        };
+    // Add the shortcode mapping at the top of your script or inside the function
+const regionShortCodes = {
+    frankfurt: 'fra',
+    atlanta: 'atl',
+    LA: 'lax',
+    hongkong: 'hkg',
+    tokyo: 'tok',
+    sydney: 'syd'
+};
 
-        const promises = Object.entries(endpoints).map(async ([key, url]) => {
-            const start = performance.now();
-            try {
-                await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
-                const end = performance.now();
-                window.networkStats[key] = Math.round(end - start);
-                console.log(`Ping to ${key}: ${window.networkStats[key]}ms`);
-            } catch (e) {
-                window.networkStats[key] = 300; // Default fallback for errors
+async function updateGlobalPings() {
+    const endpoints = {
+        frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
+        atlanta: "https://dynamodb.us-east-1.amazonaws.com",
+        LA: "https://dynamodb.us-west-2.amazonaws.com",
+        hongkong: "https://dynamodb.ap-east-1.amazonaws.com",
+        tokyo: "https://dynamodb.ap-northeast-1.amazonaws.com",
+        sydney: "https://dynamodb.ap-southeast-2.amazonaws.com"
+    };
+
+    const promises = Object.entries(endpoints).map(async ([key, url]) => {
+        const start = performance.now();
+        try {
+            // Use a small timeout or no-cors fetch to check latency
+            await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
+            const end = performance.now();
+            const pingValue = (end - start).toFixed(1); // One decimal place
+            window.networkStats[key] = parseFloat(pingValue);
+
+            // Update UI if this is the currently selected region
+            const activeRegion = document.getElementById("regionSelect").value;
+            if (key === activeRegion) {
+                const display = document.getElementById('ping-display');
+                if (display) {
+                    const shortCode = regionShortCodes[key] || key;
+                    display.innerText = `${pingValue} ms ${shortCode}`;
+                }
+                // Update the actual game delay
+                currentPing = Math.round(pingValue);
             }
-        });
-        await Promise.all(promises);
-    }
-    updateGlobalPings();
+        } catch (e) {
+            window.networkStats[key] = 999;
+        }
+    });
+
+    await Promise.all(promises);
+}
+
+// Ensure updateGlobalPings is called on an interval (e.g., every 5 seconds)
+setInterval(updateGlobalPings, 5000);
+updateGlobalPings(); // Initial call
 joyBase.addEventListener('touchstart', e => {
     const touch = e.touches[0]; const rect = joyBase.getBoundingClientRect();
     joystick.active = true; joystick.startX = rect.left + rect.width / 2; joystick.startY = rect.top + rect.height / 2;
@@ -1639,9 +1667,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 render();
-setTimeout(()=>{
-    updateGlobalPings();
-}, currentPing*100);
+
 </script>
 
 </body></html>
