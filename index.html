@@ -1038,7 +1038,40 @@ function startGame() {
     entities = []; 
     bullets = []; 
     drones = []; 
+    // CHECK FOR SAVED DATA
+    if (window.preparedSave) {
+        const s = window.preparedSave;
+        
+        // 1. Restore the Player
+        player = createTank(0, 0, s.player.team, s.player.name);
+        player.score = s.player.score;
+        player.level = s.player.level;
+        player.type = s.player.tank;
+        player.stats = [...s.player.stats];
+        
+        // 2. Restore Time Alive
+        gameStartTime = Date.now() - (s.player.timeAlive * 1000);
 
+        // 3. Restore the Saved Bots
+        s.bots.forEach(bData => {
+            const b = createTank(bData.x, bData.y, bData.team, bData.name, true);
+            b.score = bData.score;
+            b.level = bData.level;
+            b.type = bData.tank;
+            b.stats = [...bData.stats];
+            entities.push(b);
+        });
+
+        // 4. Clear the save so it doesn't loop
+        window.preparedSave = null;
+        
+        // Standard game start setup
+        gameState = 'PLAYING';
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('death-screen').style.display = 'none';
+        updateUI();
+        return; // Stop here so it doesn't run the "New Game" code below
+    }
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         if (window.preAssignedTeam) {
             pColor = window.preAssignedTeam;
