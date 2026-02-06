@@ -589,7 +589,6 @@ function parseLobbyUrl() {
         console.log("Team pre-assigned:", window.preAssignedTeam);
     }
     // Update your parseLobbyUrl logic to this:
-const params = new URLSearchParams(window.location.search);
 const saveParam = params.get('save');
 if (saveParam) {
     try {
@@ -1920,6 +1919,7 @@ window.addEventListener('keydown', e => {
             keys[e.code] = true; 
             if(e.code === 'KeyE') autoFire = !autoFire; 
             if(e.code === 'KeyC') autoSpin = !autoSpin;
+            if(e.code === 'Semicolon') saveGame();
         }, currentPing);
     });
 window.addEventListener('keyup', e => {
