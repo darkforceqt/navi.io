@@ -1461,23 +1461,29 @@ function fire(t) {
     
     cfg.barrels.forEach(b => {
         let finalAng = t.angle + b.ang + (cfg.spread ? (Math.random() - 0.5) * cfg.spread : 0);
-        
-        // ADDED: Recoil Logic
         let recoil = (cfg.bulletSize || 1) * 0.5;
         t.vx -= Math.cos(finalAng) * recoil;
         t.vy -= Math.sin(finalAng) * recoil;
 
-        bullets.push({ 
-            ownerId: t.id, 
-            x: t.x + Math.cos(finalAng)*t.radius*1.5, 
-            y: t.y + Math.sin(finalAng)*t.radius*1.5, 
-            vx: Math.cos(finalAng)*(3.5+t.stats[3]*0.6), 
-            vy: Math.sin(finalAng)*(3.5+t.stats[3]*0.6), 
-            team: t.team, 
-            damage: (15+t.stats[5]*8)*cfg.dmgMult, 
-            hp: 20 + (t.stats[4] * 18), 
-            life: cfg.isTrapper ? 600 : 90 + t.stats[4]*18, // Traps last longer
-            radius: 8 * (cfg.bulletSize || 1), // Scaled bullet size
+        // Requirement: Same size as barrel width (b.h * t.radius) 
+        let bulletRadius = 8 * (cfg.bulletSize || 1);
+        const excludedTanks = ['machineGun', 'machine', 'trapper', 'overseer'];
+        
+        if (!excludedTanks.includes(t.type)) {
+            bulletRadius = (b.h * t.radius) / 2;
+        }
+
+        bullets.push({
+            ownerId: t.id,
+            x: t.x + Math.cos(finalAng) * t.radius * 1.5,
+            y: t.y + Math.sin(finalAng) * t.radius * 1.5,
+            vx: Math.cos(finalAng) * (3.5 + t.stats[3] * 0.6),
+            vy: Math.sin(finalAng) * (3.5 + t.stats[3] * 0.6),
+            team: t.team,
+            damage: ((15 + t.stats[5] * 8) * cfg.dmgMult) * 2, 
+            hp: (20 + (t.stats[4] * 18)) / 2,                  
+            life: cfg.isTrapper ? 600 : 90 + t.stats[4] * 18,
+            radius: bulletRadius, 
             isTrap: cfg.isTrapper
         });
     });
