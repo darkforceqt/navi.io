@@ -326,6 +326,32 @@
     padding: 12px; border-radius: 6px; border: 1px solid #444;
     background: white; color: #333; font-weight: 500; cursor: pointer;
 }
+        #death-screen.saved-theme {
+    background: rgba(255, 230, 0, 0.85); /* Bright Yellow */
+}
+#death-screen.saved-theme .death-card {
+    background: rgba(40, 40, 0, 0.95);
+    border: 3px solid #ffd700;
+}
+#death-screen.saved-theme .death-title {
+    color: #ffd700;
+}
+#save-link-container {
+    margin-top: 15px;
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+}
+.save-input {
+    padding: 10px;
+    background: #111;
+    color: #ffd700;
+    border: 1px solid #444;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 12px;
+}
 .google-btn:hover { background: #f1f1f1; }
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async="" defer=""></script>
@@ -428,13 +454,16 @@
     
 
 
-      <div id="death-screen">
+     <div id="death-screen">
     <div class="death-card">
-        <h1 class="death-title">Destroyed</h1>
-
+        <h1 class="death-title">You Died</h1>
         <canvas id="deathTankCanvas" width="140" height="140"></canvas>
-
         <div id="death-stats"></div>
+        
+        <div id="save-link-container">
+            <div style="font-size: 12px; margin-bottom: 5px; color: #aaa;">Copy Save Link:</div>
+            <input type="text" id="saveLinkInput" class="save-input" readonly onclick="this.select()">
+        </div>
 
         <div class="death-buttons">
             <button class="death-btn primary" onclick="startGame()">Play Again</button>
@@ -480,7 +509,55 @@ const teamColorMap = {
     'gr': '#73c176', // Green
     'pu': '#bf7ff5'  // Purple
 };
+function saveGame() {
+    if (gameState !== 'PLAYING' || !player) return;
 
+    const timeAlive = Math.floor((Date.now() - gameStartTime) / 1000);
+    
+    // 1. Capture Player Data
+    const saveData = {
+        region: selectedRegion,
+        mode: gameMode,
+        player: {
+            name: player.name,
+            score: player.score,
+            level: player.level,
+            tank: player.type,
+            team: player.team,
+            stats: [...player.stats],
+            timeAlive: timeAlive
+        },
+        // 2. Capture All Bots
+        bots: entities.filter(e => !e.isShape).map(b => ({
+            name: b.name,
+            score: b.score,
+            level: b.level,
+            tank: b.type,
+            team: b.team,
+            x: b.x,
+            y: b.y,
+            stats: [...b.stats]
+        }))
+    };
+
+    // 3. Encode to Base64
+    const encoded = btoa(JSON.stringify(saveData));
+    const fullUrl = window.location.origin + window.location.pathname + "?save=" + encoded;
+
+    // 4. Update UI to "Saved" state
+    const ds = document.getElementById('death-screen');
+    const title = ds.querySelector('.death-title');
+    const linkInput = document.getElementById('saveLinkInput');
+    const linkContainer = document.getElementById('save-link-container');
+
+    ds.classList.add('saved-theme');
+    title.innerText = "Saved";
+    linkInput.value = fullUrl;
+    linkContainer.style.display = 'flex';
+
+    // 5. Trigger Death Screen
+    endGame(); 
+}
 // 2. Main function to parse URL and update UI/State
 function parseLobbyUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -513,7 +590,25 @@ function parseLobbyUrl() {
         window.preAssignedTeam = teamColorMap[teamParam];
         console.log("Team pre-assigned:", window.preAssignedTeam);
     }
+    // Modify existing parseLobbyUrl
+const originalParseLobbyUrl = parseLobbyUrl;
+parseLobbyUrl = function() {
+    originalParseLobbyUrl();
+    const params = new URLSearchParams(window.location.search);
+    const saveParam = params.get('save');
+    if (saveParam) {
+        try {
+            window.preparedSave = JSON.parse(atob(saveParam));
+            console.log("Save link loaded successfully");
+            
+            // Sync UI to saved mode/region
+            updateDropdownSelection('modeDropdown', window.preparedSave.mode);
+            updateDropdownSelection('customRegionSelect', window.preparedSave.region);
+        } catch(e) { console.error("Invalid save link"); }
+    }
+};
 }
+    
 
 // 3. Helper to update your custom dropdown UI visually
 function updateDropdownSelection(containerId, value) {
@@ -1029,8 +1124,48 @@ function startGame() {
     for(let i = 0; i < baseBotCount; i++) {
         spawnBot();
     }
-}
+    if (window.preparedSave) {
+        const s = window.preparedSave;
+        
+        // 1. Restore Player
+        player.name = s.player.name;
+        player.score = s.player.score;
+        player.level = s.player.level;
+        player.type = s.player.tank;
+        player.team = s.player.team;
+        player.stats = [...s.player.stats];
+        
+        // 2. Restore Time Alive
+        gameStartTime = Date.now() - (s.player.timeAlive * 1000);
 
+        // 3. Replace default bots with saved bots
+        entities = entities.filter(e => e.isShape); // Keep shapes, remove default bots
+        s.bots.forEach(bData => {
+            const b = createTank(bData.x, bData.y, bData.team, bData.name, true);
+            b.score = bData.score;
+            b.level = bData.level;
+            b.type = bData.tank;
+            b.stats = [...bData.stats];
+            entities.push(b);
+        });
+
+        updateUI();
+        window.preparedSave = null; // Consume the save
+    }
+    
+    // Reset theme in case we previously "Saved"
+    document.getElementById('death-screen').classList.remove('saved-theme');
+    document.getElementById('death-screen').querySelector('.death-title').innerText = "Destroyed";
+    document.getElementById('save-link-container').style.display = 'none';
+}
+// Global to hold prepared save
+window.preparedSave = null;
+// Clear save if mode/region changes manually
+document.querySelectorAll('.custom-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+        window.preparedSave = null; // Clear preparation on manual change
+    });
+});
 function spawnShape() {
     const r = Math.random(); 
     let type = r < 0 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
