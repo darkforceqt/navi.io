@@ -514,7 +514,6 @@ function saveGame() {
 
     const timeAlive = Math.floor((Date.now() - gameStartTime) / 1000);
     
-    // 1. Capture Player Data
     const saveData = {
         region: selectedRegion,
         mode: gameMode,
@@ -527,7 +526,6 @@ function saveGame() {
             stats: [...player.stats],
             timeAlive: timeAlive
         },
-        // 2. Capture All Bots
         bots: entities.filter(e => !e.isShape).map(b => ({
             name: b.name,
             score: b.score,
@@ -540,11 +538,12 @@ function saveGame() {
         }))
     };
 
-    // 3. Encode to Base64
-    const encoded = btoa(JSON.stringify(saveData));
+    // FIX: Encode Unicode characters safely before btoa
+    const jsonString = JSON.stringify(saveData);
+    const encoded = btoa(unescape(encodeURIComponent(jsonString)));
+    
     const fullUrl = window.location.origin + window.location.pathname + "?save=" + encoded;
 
-    // 4. Update UI to "Saved" state
     const ds = document.getElementById('death-screen');
     const title = ds.querySelector('.death-title');
     const linkInput = document.getElementById('saveLinkInput');
@@ -555,7 +554,6 @@ function saveGame() {
     linkInput.value = fullUrl;
     linkContainer.style.display = 'flex';
 
-    // 5. Trigger Death Screen
     endGame(); 
 }
 // 2. Main function to parse URL and update UI/State
@@ -590,23 +588,22 @@ function parseLobbyUrl() {
         window.preAssignedTeam = teamColorMap[teamParam];
         console.log("Team pre-assigned:", window.preAssignedTeam);
     }
-    // Modify existing parseLobbyUrl
-const originalParseLobbyUrl = parseLobbyUrl;
-parseLobbyUrl = function() {
-    originalParseLobbyUrl();
-    const params = new URLSearchParams(window.location.search);
-    const saveParam = params.get('save');
-    if (saveParam) {
-        try {
-            window.preparedSave = JSON.parse(atob(saveParam));
-            console.log("Save link loaded successfully");
-            
-            // Sync UI to saved mode/region
-            updateDropdownSelection('modeDropdown', window.preparedSave.mode);
-            updateDropdownSelection('customRegionSelect', window.preparedSave.region);
-        } catch(e) { console.error("Invalid save link"); }
+    // Update your parseLobbyUrl logic to this:
+const params = new URLSearchParams(window.location.search);
+const saveParam = params.get('save');
+if (saveParam) {
+    try {
+        // FIX: Decode Unicode characters safely after atob
+        const decodedJson = decodeURIComponent(escape(atob(saveParam)));
+        window.preparedSave = JSON.parse(decodedJson);
+        
+        console.log("Save link loaded successfully");
+        updateDropdownSelection('modeDropdown', window.preparedSave.mode);
+        updateDropdownSelection('customRegionSelect', window.preparedSave.region);
+    } catch(e) { 
+        console.error("Invalid save link or encoding error:", e); 
     }
-};
+}
 }
     
 
