@@ -655,21 +655,19 @@ window.addEventListener('DOMContentLoaded', parseLobbyUrl);</script>
         console.log("Verification successful. Spawn button enabled.");
     }, 1000);
 }
+// Mapping for region codes
+const regionCodes = {
+    frankfurt: 'fra',
+    atlanta: 'atl',
+    LA: 'lax',
+    hongkong: 'hkg',
+    tokyo: 'tok',
+    sydney: 'syd'
+};
 function copyPartyLink() {
     const mode = document.getElementById('modeSelect').value; // e.g., "FFA", "TEAMS"
-    const regionRaw = document.getElementById('regionSelect').value; // e.g., "frankfurt", "LA"
-    
-    // Mapping for region codes
-    const regionCodes = {
-        frankfurt: 'fra',
-        atlanta: 'atl',
-        LA: 'lax',
-        hongkong: 'hkg',
-        tokyo: 'tok',
-        sydney: 'syd'
-    };
-    
-    const rCode = regionCodes[regionRaw] || 'fra';
+    const regionRaw = document.getElementById('regionSelect').value; // e.g., "frankfurt", "LA" 
+   const rCode = regionCodes[regionRaw] || 'fra';
     const randomId = Math.floor(Math.random() * 9000000000) + 1000000000;
     const baseUrl = window.location.origin + window.location.pathname;
     
@@ -761,7 +759,7 @@ const ARENA_SIZE = 4500;
 let REGION_NAMES = {};
 async function loadRegionNames() {
     try {
-        const response = await fetch('/names.json');
+        const response = await fetch('https://darkforcewastaken.github.io/navi.io/names.json');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
