@@ -1288,7 +1288,7 @@ function update() {
         if (!owner.isShape && TANK_TYPES[owner.type].isDroneSpawner) {
             let curDrones = drones.filter(d => d.ownerId === owner.id);
             if (curDrones.length < 8 && owner.reload <= 0) {
-                drones.push({ id: Math.random(), ownerId: owner.id, team: owner.team, x: owner.x, y: owner.y, vx: 0, vy: 0, radius: 18, hp: 25 + owner.stats[4]*15, damage: 6 + owner.stats[5]*4, bodyDmg: 5 + owner.stats[2]*2, speed: 1.75 + owner.stats[3]*0.45 });
+                drones.push({ id: Math.random(), ownerId: owner.id, team: owner.team, x: owner.x, y: owner.y, vx: 0, vy: 0, radius: 18, hp: 30 + owner.stats[4]*18, damage: 6 + owner.stats[5]*5, bodyDmg: 5 + owner.stats[2]*2, speed: 1.75 + owner.stats[3]*0.45 });
                 owner.reload = TANK_TYPES[owner.type].baseReload * Math.pow(0.85, owner.stats[6]);
             }
         }
