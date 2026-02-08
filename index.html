@@ -788,6 +788,7 @@ const TANK_TYPES = {
         ], 
         dmgMult: 0.6, baseReload: 35 
     },
+    spike: { barrels: [], isSpike: true },
     sniper: { barrels: [{x:0, y:-0.2, w:2.4, h:0.4, ang:0}], dmgMult: 1.2, baseReload: 100 },
     machine: { barrels: [{x:0, y:-0.5, w:1.7, h:1.0, ang:0}], dmgMult: 0.7, baseReload: 22, spread: 0.65 },
     flankGuard: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.35, w:1.8, h:0.7, ang: Math.PI}], dmgMult: 1, baseReload: 50 },
@@ -1265,14 +1266,36 @@ function getBotTarget(b) {
 
 function updateStatLogic(t) {
     if(t.isShape) return;
-    t.maxHp = 100 + (t.stats[1] * 25);
-    t.bodyDmg = 2 + (t.stats[2] * 4);
+    
+    // Standard calculation
+    let baseMaxHp = 100 + (t.stats[1] * 25);
+    let baseBodyDmg = 2 + (t.stats[2] * 4);
+    
+    // Apply Spike Multipliers
+    if (t.type === 'spike') {
+        baseMaxHp *= 1.65;
+        baseBodyDmg *= 1.65;
+    }
+
+    t.maxHp = baseMaxHp;
+    t.bodyDmg = baseBodyDmg;
     t.radius = 20 + (t.level * 0.35);
 }
 
 function update() {
     if(gameState !== 'PLAYING') return;
     updateStatLogic(player);
+    if (player.type === 'spike' && typeof player.spikeAngle === 'undefined') player.spikeAngle = 0;
+    
+    // Handle Spike Rotation Input
+    if (player.type === 'spike') {
+        const rotSpeed = 0.09; // How fast spikes spin
+        if (keys['ShiftLeft']) {
+            player.spikeAngle -= rotSpeed; // Anti-Clockwise
+        } else {
+            player.spikeAngle += rotSpeed; // Clockwise (Default)
+        }
+    }
     if(autoSpin) player.angle += 0.05; if(autoFire || mobileFireActive) fire(player);
     const spd = 0.22 + player.stats[7] * 0.03;
     if(joystick.active) { player.vx += (joystick.x / 60) * spd; player.vy += (joystick.y / 60) * spd; }
@@ -1496,19 +1519,17 @@ function updateUI() {
             }
         } 
     });
-
-    // Evolution Logic
     const evoMenu = document.getElementById('evolution-menu');
     evoMenu.innerHTML = '';
     let options = [];
 
     if(player.level >= 15 && player.type === 'basic') {
-        options = ['twin', 'sniper', 'machine', 'flankGuard'];
+        options = ['twin', 'sniper', 'machine', 'flankGuard', 'spike'];
     } else if (player.level >= 45) {
         if(player.type === 'machine') options = ['destroyer'];
         if(player.type === 'sniper') options = ['overseer', 'trapper'];
         if(player.type === 'flankGuard') options = ['triAngle'];
-        if(player.type === 'twin') options = ['tripleShot']; // You can add tripleShot later
+        if(player.type === 'twin') options = ['tripleShot'];
     }
 
     if(options.length > 0) {
@@ -1560,38 +1581,82 @@ function drawTank(t) {
     // Draw Name
     ctx.fillStyle = "white";
     ctx.font = "bold 14px Ubuntu";
-    ctx.fillText(t.name, t.x, t.y - t.radius - 35); // Moved up to make room for score
+    ctx.fillText(t.name, t.x, t.y - t.radius - 35); 
 
     // Draw Score
     ctx.font = "bold 11px Ubuntu";
-    ctx.fillStyle = "#eeeeee"; // Slightly dimmer white for the score
+    ctx.fillStyle = "#eeeeee"; 
     ctx.fillText(formatScore(t.score), t.x, t.y - t.radius - 22);
 
     // Tank Body Drawing
     ctx.save(); 
     ctx.translate(t.x, t.y); 
-    ctx.rotate(t.angle); 
-    ctx.fillStyle = '#999'; 
-    ctx.strokeStyle = '#555'; 
-    ctx.lineWidth = 3;
     
-    TANK_TYPES[t.type].barrels.forEach(b => {
-        ctx.save(); 
-        ctx.rotate(b.ang);
-        if(b.trap) { 
-            ctx.beginPath(); 
-            ctx.moveTo(0, -t.radius * 0.4); 
-            ctx.lineTo(t.radius * b.w, -t.radius * b.h); 
-            ctx.lineTo(t.radius * b.w, t.radius * b.h); 
-            ctx.lineTo(0, t.radius * 0.4); 
-            ctx.fill(); ctx.stroke(); 
-        } else { 
-            ctx.fillRect(0, b.y * t.radius, b.w * t.radius, b.h * t.radius); 
-            ctx.strokeRect(0, b.y * t.radius, b.w * t.radius, b.h * t.radius); 
-        }
-        ctx.restore();
-    });
+    // SPIKE RENDERING
+    if (TANK_TYPES[t.type].isSpike) {
+        // Use the spikeAngle we calculated in update(), default to 0 if bot/undefined
+        const rot = t.spikeAngle || (Date.now() / 100); 
+        ctx.rotate(rot); 
+        
+        const numSpikes = 16;
+        ctx.fillStyle = '#555555'; // Dark grey spikes
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 4; // Thicker line for spikes
+        ctx.lineJoin = "round";
 
+        ctx.beginPath();
+        for (let i = 0; i < numSpikes; i++) {
+            const angle = (Math.PI * 2 / numSpikes) * i;
+            const outerR = t.radius * 1.6; // Spikes stick out far
+            const innerR = t.radius * 0.9; // Base is slightly inside body
+
+            // Triangle point calculation
+            const ax = Math.cos(angle) * outerR;
+            const ay = Math.sin(angle) * outerR;
+            const bx = Math.cos(angle + 0.2) * innerR;
+            const by = Math.sin(angle + 0.2) * innerR;
+            const cx = Math.cos(angle - 0.2) * innerR;
+            const cy = Math.sin(angle - 0.2) * innerR;
+
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(ax, ay);
+            ctx.lineTo(bx, by);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Rotate back so the main body color circle isn't spinning (optional, but looks better)
+        ctx.rotate(-rot); 
+    } else {
+        // Standard Tank Rotation for non-spikes
+        ctx.rotate(t.angle); 
+    }
+
+    // Standard Barrels (Only draw if NOT a spike)
+    if (!TANK_TYPES[t.type].isSpike) {
+        ctx.fillStyle = '#999'; 
+        ctx.strokeStyle = '#555'; 
+        ctx.lineWidth = 3;
+        TANK_TYPES[t.type].barrels.forEach(b => {
+            ctx.save(); 
+            ctx.rotate(b.ang);
+            if(b.trap) { 
+                ctx.beginPath(); 
+                ctx.moveTo(0, -t.radius * 0.4); 
+                ctx.lineTo(t.radius * b.w, -t.radius * b.h); 
+                ctx.lineTo(t.radius * b.w, t.radius * b.h); 
+                ctx.lineTo(0, t.radius * 0.4); 
+                ctx.fill(); ctx.stroke(); 
+            } else { 
+                ctx.fillRect(0, b.y * t.radius, b.w * t.radius, b.h * t.radius); 
+                ctx.strokeRect(0, b.y * t.radius, b.w * t.radius, b.h * t.radius); 
+            }
+            ctx.restore();
+        });
+    }
+
+    // Main Body Circle
     ctx.beginPath(); 
     ctx.arc(0, 0, t.radius, 0, Math.PI * 2); 
     ctx.fillStyle = t.team; 
