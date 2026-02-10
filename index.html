@@ -399,42 +399,42 @@
         <div class="custom-select" id="customRegionSelect">
     <div class="select-trigger">
         <div class="select-label">
-            <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle">
-            <span>Frankfurt</span>
+            <img src="/navi.io/flags/usa.png" class="icon-circle">
+            <span>Atlanta</span>
         </div>
         <i class="arrow"></i>
     </div>
     <div class="custom-options">
         <div class="custom-option" data-value="frankfurt">
-            <img src="https://image2url.com/r2/bucket1/images/1768042646482-a008054e-a9ad-450e-b3bb-92c225768eb6.png" class="icon-circle"> Frankfurt
+            <img src="/navi.io/flags/frankfurt.png" class="icon-circle"> Frankfurt
         </div>
         <div class="custom-option" data-value="atlanta">
-            <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="icon-circle"> Atlanta
+            <img src="/navi.io/flags/usa.png" class="icon-circle"> Atlanta
         </div>
         <div class="custom-option" data-value="LA">
-            <img src="https://image2url.com/r2/bucket1/images/1768042798674-460dcac2-883a-441e-853b-1c1576692c4e.png" class="icon-circle"> Los Angeles
+            <img src="/navi.io/flags/usa.png" class="icon-circle"> Los Angeles
         </div>
         <div class="custom-option" data-value="hongkong">
-            <img src="https://image2url.com/r2/bucket1/images/1768042824933-37209d5d-6f47-4821-9d30-ea154cb06781.png" class="icon-circle"> Hong Kong
+            <img src="/navi.io/flags/hongkong.png" class="icon-circle"> Hong Kong
         </div>
         <div class="custom-option" data-value="tokyo">
-            <img src="https://image2url.com/r2/bucket2/images/1768064708827-01ceabb9-42d2-42d3-abe7-c06e4e59b7b3.png" class="icon-circle"> Tokyo
+            <img src="/navi.io/flags/tokyo.png" class="icon-circle"> Tokyo
         </div>
         <div class="custom-option" data-value="sydney">
-            <img src="https://image2url.com/r2/bucket2/images/1768064762420-ae8ca948-7c89-4f46-9176-06baef3c111b.png" class="icon-circle"> Sydney
+            <img src="/navi.io/flags/sydney.png" class="icon-circle"> Sydney
         </div>
     </div>
-    <input type="hidden" id="regionSelect" value="frankfurt">
+    <input type="hidden" id="regionSelect" value="atlanta">
 </div>
 
-        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" class="menu-input">
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="18" class="menu-input">
         <div class="cf-turnstile" 
             data-sitekey="0x4AAAAAACL3tHxKP9xDWcuv" 
             data-callback="onTurnstileSuccess">
         </div>
 <button class="spawn-btn" onclick="startGame()">Play!</button>
 <button id="copyPartyBtn" class="spawn-btn show-button" style="background: #444; margin-top: 5px;" onclick="copyPartyLink()">
-    Copy Party Link
+    Copy Lobby Link
 </button>
         
         <div class="menu-footer">
@@ -456,8 +456,7 @@
         </div>
 
         <div class="death-buttons">
-            <button class="death-btn primary" onclick="startGame()">Play Again</button>
-            <button class="death-btn" onclick="resetToMenu()">Menu</button>
+            <button class="death-btn primary" onclick="resetToMenu()">Return to Menu</button>
         </div>
     </div>
 </div>
@@ -633,36 +632,32 @@ const regionCodes = {
     sydney: 'syd'
 };
 function copyPartyLink() {
-    const mode = document.getElementById('modeSelect').value; // e.g., "FFA", "TEAMS"
-    const regionRaw = document.getElementById('regionSelect').value; // e.g., "frankfurt", "LA" 
+    const mode = document.getElementById('modeSelect').value; 
+    const regionRaw = document.getElementById('regionSelect').value; 
    const rCode = regionCodes[regionRaw] || 'fra';
     const randomId = Math.floor(Math.random() * 9000000000) + 1000000000;
     const baseUrl = window.location.origin + window.location.pathname;
     
     let lobbyParam = "";
     let teamParam = "";
-
-    // Formatting based on requested examples
     if (mode === 'FFA') {
         lobbyParam = `?lobby=${rCode}f-${randomId}.navi.io:3000`;
     } else if (mode === 'TEAMS') {
         lobbyParam = `?lobby=${rCode}2-${randomId}.navi.io:3000`;
-        teamParam = "&team=bl"; // Example blue team
+        //teamParam = "&team=bl"; // Example blue team
     } else if (mode === '4TEAMS') {
         lobbyParam = `?lobby=${rCode}4-${randomId}.navi.io:3000`;
-        teamParam = "&team=pu"; // Example purple team
+        //teamParam = "&team=pu"; // Example purple team
     } else if (mode === 'MAZE') {
         lobbyParam = `?lobby=${rCode}m-${randomId}.navi.io:3000`;
     }
 
     const fullLink = baseUrl + lobbyParam + teamParam;
-
-    // Copy to clipboard
     navigator.clipboard.writeText(fullLink).then(() => {
         const btn = document.getElementById('copyPartyBtn');
         const originalText = btn.innerText;
-        btn.innerText = "Link Copied!";
-        btn.style.background = "#73c176"; // Green feedback
+        btn.innerText = "Copied!";
+        btn.style.background = "#73c176";
         
         setTimeout(() => {
             btn.innerText = originalText;
@@ -1800,7 +1795,14 @@ function render() {
     }
     requestAnimationFrame(render);
 }
-
+const regionShortCodes = {
+    frankfurt: 'fra',
+    atlanta: 'atl',
+    LA: 'lax',
+    hongkong: 'hkg',
+    tokyo: 'tok',
+    sydney: 'syd'
+};
 function endGame() {
     gameState = 'DEAD';
 
@@ -1812,12 +1814,12 @@ function endGame() {
         Level: ${player.level} (${player.type.toUpperCase()})<br>
         Kills: ${kills}<br>
         Time Alive: ${timeAlive}s<br>
-        Region: ${selectedRegion}
+        Region: ${regionShortCodes[selectedRegion]}
     `;
 
     document.getElementById('death-screen').style.display = 'flex';
 }
-function resetToMenu() { // Show the menu and hide the HUD
+function resetToMenu() { 
     document.getElementById('menu-screen').style.display = 'flex';
     document.getElementById('minimap').classList.add('hidden');
     document.getElementById('hud-bottom').classList.add('hidden');
@@ -1885,18 +1887,7 @@ const fireBtn = document.getElementById('mobile-fire');
     };
 })();
     window.networkStats = { frankfurt: 0, atlanta: 0, LA: 0, hongkong: 0, tokyo: 0, sydney: 0 };
-    let currentPing = 100; // The active delay for the game
-
-    // Add the shortcode mapping at the top of your script or inside the function
-const regionShortCodes = {
-    frankfurt: 'fra',
-    atlanta: 'atl',
-    LA: 'lax',
-    hongkong: 'hkg',
-    tokyo: 'tok',
-    sydney: 'syd'
-};
-
+    let currentPing = 100; 
 async function updateGlobalPings() {
     const endpoints = {
         frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
