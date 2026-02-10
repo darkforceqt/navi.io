@@ -738,7 +738,7 @@ const ARENA_SIZE = 4500;
 let REGION_NAMES = {};
 async function loadRegionNames() {
     try {
-        const response = await fetch('https://darkforcewastaken.github.io/navi.io/names.json');
+        const response = await fetch('/navi.io/names.json');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
