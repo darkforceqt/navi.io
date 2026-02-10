@@ -40,12 +40,10 @@
         #joystick-base { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
         #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; }
         #mobile-fire { position: absolute; bottom: 60px; right: 180px; width: 80px; height: 80px; background: rgba(255,0,0,0.3); border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
-/* Add to your <style> section */
 #death-screen canvas {
     background: transparent;
     margin: 20px 0;
 }
-        /* Add this to your <style> section */
 .hidden {
     display: none !important;
 }
@@ -101,6 +99,7 @@
     color: white;
     transition: transform 0.15s, box-shadow 0.15s;
 }
+#copyPartyBtn{padding: 6px !important; hidden: true;}
 .show-button {
     display: block !important;
     animation: fadeIn 0.5s;
@@ -312,7 +311,7 @@
     font-weight: 400;
     opacity: 0.9;
 }
-       .modal-overlay {
+.modal-overlay {
     position: absolute; 
     inset: 0; 
     background: rgba(0,0,0,0.8);
@@ -320,7 +319,7 @@
     align-items: center; 
     justify-content: center; 
     z-index: 1000;
-    hidden: true;
+    display: none;
     /* Added to ensure visibility toggle works */
 }
 .auth-card { width: 280px !important; }
@@ -360,6 +359,7 @@
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async="" defer=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="ui-layer">
@@ -428,35 +428,22 @@
 </div>
 
         <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" class="menu-input">
-        
-<button class="spawn-btn" onclick="startGame()">Play!</button>
         <div class="cf-turnstile" 
             data-sitekey="0x4AAAAAACL3tHxKP9xDWcuv" 
             data-callback="onTurnstileSuccess">
         </div>
+<button class="spawn-btn" onclick="startGame()">Play!</button>
+<button id="copyPartyBtn" class="spawn-btn show-button" style="background: #444; margin-top: 5px;" onclick="copyPartyLink()">
+    Copy Party Link
+</button>
+        
         <div class="menu-footer">
             <span>WASD / Mouse</span>
             <span>E = Autofire · C = Autospin · Left Shift = Drone Repel</span>
         </div>
     </div>
 </div>
-    <input type="hidden" id="regionSelect" value="frankfurt">
 </div>
-
-        
-        <input type="text" id="playerName" placeholder="Enter your name" maxlength="16" class="menu-input">
-
-        <button class="spawn-btn" onclick="startGame()">Spawn</button>
-        <button id="copyPartyBtn" class="spawn-btn show-button" style="background: #444; margin-top: 5px;" onclick="copyPartyLink()">
-    Copy Party Link
-</button>
-        <div class="menu-footer">
-            <span>WASD / Mouse</span>
-            <span>E = Autofire · C = Autospin</span>
-        </div>
-    
-
-
      <div id="death-screen">
     <div class="death-card">
         <h1 class="death-title">You Died</h1>
@@ -622,40 +609,21 @@ function updateDropdownSelection(containerId, value) {
         label.className = option.className.replace('custom-option', 'select-label');
     }
 }
-
-// 4. Update your existing startGame function
-// Locate your startGame() and add this logic at the start of the team assignment:
-/* Inside startGame():
-   if (window.preAssignedTeam && (gameMode === 'TEAMS' || gameMode === '4TEAMS')) {
-       pColor = window.preAssignedTeam;
-   } else {
-       // ... existing auto-balance logic ...
-   }
-*/
-
 // Run on load
 window.addEventListener('DOMContentLoaded', parseLobbyUrl);</script>
 <script>
     function onTurnstileSuccess(token) {
-    // 1. Wait 1 second after "Success!" appears
     setTimeout(() => {
         const turnstileWidget = document.querySelector('.cf-turnstile');
         const spawnBtn = document.querySelector('.spawn-btn');
-
-        // 2. Hide the Turnstile widget
         if (turnstileWidget) {
             turnstileWidget.style.display = 'none';
         }
-
-        // 3. Show the Spawn button
         if (spawnBtn) {
             spawnBtn.classList.add('show-button');
         }
-        
-        console.log("Verification successful. Spawn button enabled.");
-    }, 1000);
+    }, 800);
 }
-// Mapping for region codes
 const regionCodes = {
     frankfurt: 'fra',
     atlanta: 'atl',
@@ -2035,7 +2003,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 render();
-
+startGame();
 </script>
 
 </body></html>
