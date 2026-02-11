@@ -36,10 +36,7 @@
         #leaderboard { position: absolute; top: 20px; right: 20px; color: white; text-align: right; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; min-width: 170px; font-size: 14px; }
         #minimap { position: absolute; bottom: 20px; right: 20px; width: 150px; height: 150px; background: rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.3); }
         
-        #mobile-controls { position: absolute; inset: 0; pointer-events: none; display: none; }
-        #joystick-base { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
-        #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; }
-        #mobile-fire { position: absolute; bottom: 60px; right: 180px; width: 80px; height: 80px; background: rgba(255,0,0,0.3); border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
+        
 #death-screen canvas {
     background: transparent;
     margin: 20px 0;
@@ -471,10 +468,6 @@
     <div id="ping-display" class="count">0.0 ms fra</div>
 </div>
         <div id="minimap" class="hidden"><canvas id="minimapCanvas" width="150" height="150"></canvas></div>
-        <div id="mobile-controls">
-            <div id="joystick-base"><div id="joystick-stick"></div></div>
-            <div id="mobile-fire"></div>
-        </div>
 <script>// 1. Configuration Mapping for URL parsing
 const urlRegionMap = {
     'fra': 'frankfurt',
@@ -784,8 +777,6 @@ const SHAPES = {
 };
 let selectedRegion = "frankfurt";
 let gameState = 'MENU', gameMode = 'FFA', player, entities = [], bullets = [], drones = [], keys = {}, mouse = {x: 0, y: 0}, camera = {x:2000, y:2000}, currentZoom = 1, autoFire = false, autoSpin = false;
-let joystick = { active: false, x: 0, y: 0, startX: 0, startY: 0 };
-let mobileFireActive = false;
 const GAME_MODES = {
     FFA: 'FFA',
     TEAMS: 'TEAMS',
@@ -1827,9 +1818,6 @@ function resetToMenu() {
     document.getElementById('hud-bottom').classList.add('hidden');
     document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
 
-const joyBase = document.getElementById('joystick-base');
-const joyStick = document.getElementById('joystick-stick');
-const fireBtn = document.getElementById('mobile-fire');
 (function() {
     // Logic based on your bot population code
     const base = 24;
@@ -1931,11 +1919,6 @@ async function updateGlobalPings() {
 // Ensure updateGlobalPings is called on an interval (e.g., every 5 seconds)
 setInterval(updateGlobalPings, 5000);
 updateGlobalPings(); // Initial call
-joyBase.addEventListener('touchstart', e => {
-    const touch = e.touches[0]; const rect = joyBase.getBoundingClientRect();
-    joystick.active = true; joystick.startX = rect.left + rect.width / 2; joystick.startY = rect.top + rect.height / 2;
-}, {passive: false});
-
 window.addEventListener('touchmove', e => {
     if(!player || gameState !== 'PLAYING') return;
     for(let i=0; i<e.touches.length; i++) {
@@ -1947,11 +1930,6 @@ window.addEventListener('touchmove', e => {
         } else if(!autoSpin) player.angle = Math.atan2((t.clientY-canvas.height/2)/currentZoom, (t.clientX-canvas.width/2)/currentZoom);
     }
 }, {passive: false});
-
-window.addEventListener('touchend', e => { if(e.touches.length === 0) { joystick.active = false; joystick.x = 0; joystick.y = 0; joyStick.style.transform = `translate(0,0)`; mobileFireActive = false; } });
-fireBtn.addEventListener('touchstart', () => mobileFireActive = true);
-fireBtn.addEventListener('touchend', () => mobileFireActive = false);
-
 window.addEventListener('keydown', e => { 
         setTimeout(() => {
             keys[e.code] = true; 
