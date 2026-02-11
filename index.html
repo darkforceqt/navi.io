@@ -1298,7 +1298,6 @@ function update() {
     }
     if(autoSpin) player.angle += 0.05; if(autoFire) fire(player);
     const spd = 0.22 + player.stats[7] * 0.03;
-    if(joystick.active) { player.vx += (joystick.x / 60) * spd; player.vy += (joystick.y / 60) * spd; }
     if(keys['KeyW']) player.vy -= spd; if(keys['KeyS']) player.vy += spd;
     if(keys['KeyA']) player.vx -= spd; if(keys['KeyD']) player.vx += spd;
     player.vx *= 0.9; player.vy *= 0.9; player.x += player.vx; player.y += player.vy;
