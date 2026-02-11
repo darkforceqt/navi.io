@@ -1296,7 +1296,7 @@ function update() {
             player.spikeAngle += rotSpeed; // Clockwise (Default)
         }
     }
-    if(autoSpin) player.angle += 0.05; if(autoFire || mobileFireActive) fire(player);
+    if(autoSpin) player.angle += 0.05; if(autoFire) fire(player);
     const spd = 0.22 + player.stats[7] * 0.03;
     if(joystick.active) { player.vx += (joystick.x / 60) * spd; player.vy += (joystick.y / 60) * spd; }
     if(keys['KeyW']) player.vy -= spd; if(keys['KeyS']) player.vy += spd;
@@ -1821,18 +1821,20 @@ function render() {
     }
     requestAnimationFrame(render);
 }
-    // --- Mobile Control State ---
+// --- Mobile Control State ---
 let mobileUIEnabled = false;
+// We use two separate objects for the two joysticks
 let moveJoystick = { active: false, x: 0, y: 0, originX: 0, originY: 0, id: -1 };
 let fireJoystick = { active: false, x: 0, y: 0, originX: 0, originY: 0, id: -1 };
-
-// --- Touch Event Handling ---
 window.addEventListener('touchstart', e => {
-    mobileUIEnabled = true
-    if (gameState !== 'PLAYING' || !mobileUIEnabled) return;
+    if (typeof gameState !== 'undefined' && gameState !== 'PLAYING') return;
+    mobileUIEnabled = true;
+    if (!mobileUIEnabled) return;
+    
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
-        // Split screen: Left side for movement, Right side for firing
+        
+        // Left side of screen = Movement
         if (t.clientX < window.innerWidth / 2) {
             if (!moveJoystick.active) {
                 moveJoystick.active = true;
@@ -1840,7 +1842,9 @@ window.addEventListener('touchstart', e => {
                 moveJoystick.originX = moveJoystick.x = t.clientX;
                 moveJoystick.originY = moveJoystick.y = t.clientY;
             }
-        } else {
+        } 
+        // Right side of screen = Firing
+        else {
             if (!fireJoystick.active) {
                 fireJoystick.active = true;
                 fireJoystick.id = t.identifier;
@@ -1852,7 +1856,10 @@ window.addEventListener('touchstart', e => {
 }, { passive: false });
 
 window.addEventListener('touchmove', e => {
-    if (gameState !== 'PLAYING' || !mobileUIEnabled) return;
+    mobileUIEnabled = true;
+    if (!mobileUIEnabled) return;
+    e.preventDefault(); // Prevents scrolling while playing
+
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
         if (moveJoystick.active && t.identifier === moveJoystick.id) {
@@ -1869,85 +1876,18 @@ window.addEventListener('touchmove', e => {
 window.addEventListener('touchend', e => {
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
-        if (moveJoystick.active && t.identifier === moveJoystick.id) moveJoystick.active = false;
-        if (fireJoystick.active && t.identifier === fireJoystick.id) fireJoystick.active = false;
+        if (moveJoystick.id === t.identifier) moveJoystick.active = false;
+        if (fireJoystick.id === t.identifier) fireJoystick.active = false;
     }
 });
 
-
-
-// Movement Joystick
-if (moveJoystick.active) {
-    const dx = moveJoystick.x - moveJoystick.originX;
-    const dy = moveJoystick.y - moveJoystick.originY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 5) {
-        player.vx += (dx / dist) * spd;
-        player.vy += (dy / dist) * spd;
+window.addEventListener('touchcancel', e => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (moveJoystick.id === t.identifier) moveJoystick.active = false;
+        if (fireJoystick.id === t.identifier) fireJoystick.active = false;
     }
-}
-
-// Firing Joystick & Crosshair Angle
-if (fireJoystick.active) {
-    const dx = fireJoystick.x - fireJoystick.originX;
-    const dy = fireJoystick.y - fireJoystick.originY;
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-        player.angle = Math.atan2(dy, dx);
-        fire(player); // Trigger firing while joystick is active
-    }
-}
-
-// --- Render Logic (Inside render() function) ---
-// Draw joysticks and crosshair on top of the game world
-function drawJoysticks() {
-    if (!mobileUIEnabled || gameState !== 'PLAYING') return;
-    
-    [moveJoystick, fireJoystick].forEach(j => {
-        if (!j.active) return;
-        
-        // Draw Base
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // UI Space
-        ctx.beginPath();
-        ctx.arc(j.originX, j.originY, 60, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.stroke();
-
-        // Draw Knob
-        let dx = j.x - j.originX;
-        let dy = j.y - j.originY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const max = 60;
-        if (dist > max) {
-            dx = (dx / dist) * max;
-            dy = (dy / dist) * max;
-        }
-        ctx.beginPath();
-        ctx.arc(j.originX + dx, j.originY + dy, 25, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.fill();
-        ctx.restore();
-    });
-
-    // Draw Crosshair for Aiming
-    if (fireJoystick.active && player) {
-        const crossDist = 180 / currentZoom;
-        const cx = canvas.width / 2 + Math.cos(player.angle) * crossDist;
-        const cy = canvas.height / 2 + Math.sin(player.angle) * crossDist;
-
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.strokeStyle = "rgba(255, 50, 50, 0.6)";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(cx - 15, cy); ctx.lineTo(cx + 15, cy);
-        ctx.moveTo(cx, cy - 15); ctx.lineTo(cx, cy + 15);
-        ctx.stroke();
-        ctx.restore();
-    }
-}
+});
 const regionShortCodes = {
     frankfurt: 'fra',
     atlanta: 'atl',
