@@ -9,14 +9,47 @@
         @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap');
         body { margin: 0; overflow: hidden; background: #b0b0b0; font-family: 'Ubuntu', sans-serif; user-select: none; touch-action: none; }
         canvas { display: block; background-color: #cdcdcd; }
-        /* Update these in your <style> section */
-#ui-layer { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    pointer-events: none; /* Keeps the layer transparent to clicks for the game canvas below */
+        #ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none;
+        }
+            
+.joystick-container {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+}
+.joystick-knob {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+#mobile-toggle-btn {
+    position: absolute;
+    top: 20px;
+    right: 200px; 
+    padding: 10px 15px;
+    background: #444;
+    color: white;
+    border: 1px solid #666;
+    border-radius: 5px;
+    cursor: pointer;
+    pointer-events: auto;
+    font-size: 14px;
+    z-index: 1001;
 }
         #menu-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
         #death-screen { display: none; position: absolute; inset: 0; background: rgba(40, 0, 0, 0.85); backdrop-filter: blur(5px); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; color: white; text-align: center; }
@@ -467,6 +500,7 @@
     <div class="count"><span id="total-player-count">0</span> players</div>
     <div id="ping-display" class="count">0.0 ms fra</div>
 </div>
+        
         <div id="minimap" class="hidden"><canvas id="minimapCanvas" width="150" height="150"></canvas></div>
 <script>// 1. Configuration Mapping for URL parsing
 const urlRegionMap = {
@@ -1787,6 +1821,135 @@ function render() {
     }
     requestAnimationFrame(render);
 }
+    // --- Mobile Control State ---
+let mobileUIEnabled = false;
+let moveJoystick = { active: false, x: 0, y: 0, originX: 0, originY: 0, id: -1 };
+let fireJoystick = { active: false, x: 0, y: 0, originX: 0, originY: 0, id: -1 };
+
+// --- Touch Event Handling ---
+window.addEventListener('touchstart', e => {
+    mobileUIEnabled = true
+    if (gameState !== 'PLAYING' || !mobileUIEnabled) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        // Split screen: Left side for movement, Right side for firing
+        if (t.clientX < window.innerWidth / 2) {
+            if (!moveJoystick.active) {
+                moveJoystick.active = true;
+                moveJoystick.id = t.identifier;
+                moveJoystick.originX = moveJoystick.x = t.clientX;
+                moveJoystick.originY = moveJoystick.y = t.clientY;
+            }
+        } else {
+            if (!fireJoystick.active) {
+                fireJoystick.active = true;
+                fireJoystick.id = t.identifier;
+                fireJoystick.originX = fireJoystick.x = t.clientX;
+                fireJoystick.originY = fireJoystick.y = t.clientY;
+            }
+        }
+    }
+}, { passive: false });
+
+window.addEventListener('touchmove', e => {
+    if (gameState !== 'PLAYING' || !mobileUIEnabled) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (moveJoystick.active && t.identifier === moveJoystick.id) {
+            moveJoystick.x = t.clientX;
+            moveJoystick.y = t.clientY;
+        }
+        if (fireJoystick.active && t.identifier === fireJoystick.id) {
+            fireJoystick.x = t.clientX;
+            fireJoystick.y = t.clientY;
+        }
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', e => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (moveJoystick.active && t.identifier === moveJoystick.id) moveJoystick.active = false;
+        if (fireJoystick.active && t.identifier === fireJoystick.id) fireJoystick.active = false;
+    }
+});
+
+// --- Update Logic (Inside update() function) ---
+// Inside the main update loop, replace the movement/firing section:
+const spd = 0.22 + player.stats[7] * 0.03;
+
+// Movement Joystick
+if (moveJoystick.active) {
+    const dx = moveJoystick.x - moveJoystick.originX;
+    const dy = moveJoystick.y - moveJoystick.originY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 5) {
+        player.vx += (dx / dist) * spd;
+        player.vy += (dy / dist) * spd;
+    }
+}
+
+// Firing Joystick & Crosshair Angle
+if (fireJoystick.active) {
+    const dx = fireJoystick.x - fireJoystick.originX;
+    const dy = fireJoystick.y - fireJoystick.originY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        player.angle = Math.atan2(dy, dx);
+        fire(player); // Trigger firing while joystick is active
+    }
+}
+
+// --- Render Logic (Inside render() function) ---
+// Draw joysticks and crosshair on top of the game world
+function drawJoysticks() {
+    if (!mobileUIEnabled || gameState !== 'PLAYING') return;
+    
+    [moveJoystick, fireJoystick].forEach(j => {
+        if (!j.active) return;
+        
+        // Draw Base
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // UI Space
+        ctx.beginPath();
+        ctx.arc(j.originX, j.originY, 60, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.stroke();
+
+        // Draw Knob
+        let dx = j.x - j.originX;
+        let dy = j.y - j.originY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const max = 60;
+        if (dist > max) {
+            dx = (dx / dist) * max;
+            dy = (dy / dist) * max;
+        }
+        ctx.beginPath();
+        ctx.arc(j.originX + dx, j.originY + dy, 25, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.fill();
+        ctx.restore();
+    });
+
+    // Draw Crosshair for Aiming
+    if (fireJoystick.active && player) {
+        const crossDist = 180 / currentZoom;
+        const cx = canvas.width / 2 + Math.cos(player.angle) * crossDist;
+        const cy = canvas.height / 2 + Math.sin(player.angle) * crossDist;
+
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.strokeStyle = "rgba(255, 50, 50, 0.6)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx - 15, cy); ctx.lineTo(cx + 15, cy);
+        ctx.moveTo(cx, cy - 15); ctx.lineTo(cx, cy + 15);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
 const regionShortCodes = {
     frankfurt: 'fra',
     atlanta: 'atl',
@@ -1931,6 +2094,7 @@ window.addEventListener('touchmove', e => {
     }
 }, {passive: false});
 window.addEventListener('keydown', e => { 
+    mobileUIEnabled = false;
         setTimeout(() => {
             keys[e.code] = true; 
             if(e.code === 'KeyE') autoFire = !autoFire; 
