@@ -20,36 +20,23 @@
             
 .joystick-container {
     position: absolute;
-    width: 120px;
-    height: 120px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    width: 240px;
+    height: 240px;
+    background: rgba(205, 205, 205, 0.05);
     border-radius: 50%;
     pointer-events: none;
     z-index: 10;
 }
 .joystick-knob {
     position: absolute;
+    top: 50%;
+    left: 50%;
     width: 50px;
     height: 50px;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(125, 125, 125, 0.5);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-}
-#mobile-toggle-btn {
-    position: absolute;
-    top: 20px;
-    right: 200px; 
-    padding: 10px 15px;
-    background: #444;
-    color: white;
-    border: 1px solid #666;
-    border-radius: 5px;
-    cursor: pointer;
-    pointer-events: auto;
-    font-size: 14px;
-    z-index: 1001;
 }
         #menu-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
         #death-screen { display: none; position: absolute; inset: 0; background: rgba(40, 0, 0, 0.85); backdrop-filter: blur(5px); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; color: white; text-align: center; }
@@ -394,10 +381,10 @@
     <canvas id="gameCanvas"></canvas>
     <div id="ui-layer">
         <div id="mobile-controls" style="display: none;">
-        <div id="joystick-move" class="joystick-container" style="bottom: 50px; left: 50px;">
+        <div id="joystick-move" class="joystick-container" style="bottom: 50px; left: 150px;">
             <div class="joystick-knob"></div>
         </div>
-        <div id="joystick-fire" class="joystick-container" style="bottom: 50px; right: 50px;">
+        <div id="joystick-fire" class="joystick-container" style="bottom: 50px; right: 150px;">
             <div class="joystick-knob"></div>
         </div>
     </div>
@@ -806,6 +793,18 @@ const TANK_TYPES = {
     triAngle: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.3, w:1.5, h:0.5, ang: 2.6}, {x:0, y:-0.3, w:1.5, h:0.5, ang: -2.6}], dmgMult: 0.8, baseReload: 25 },
     destroyer: { barrels: [{x:0, y:-0.6, w:1.8, h:1.2, ang:0}], dmgMult: 3.5, baseReload: 150, bulletSize: 2.5 },
     trapper: { barrels: [{x:0, y:-0.4, w:1.2, h:0.8, ang:0, trap:true}], dmgMult: 1.5, baseReload: 80, isTrapper: true },
+    hexaTank: { 
+    barrels: [
+        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: 0},             
+        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: Math.PI / 3},   
+        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: (2 * Math.PI) / 3}, 
+        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: Math.PI},         
+        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: (4 * Math.PI) / 3},
+        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: (5 * Math.PI) / 3} 
+    ], 
+    dmgMult: 0.75, 
+    baseReload: 45 
+},
     overseer: { barrels: [{x:0, y:-0.3, w:1.2, h:0.6, ang:Math.PI/2, trap:true}, {x:0, y:-0.3, w:1.2, h:0.6, ang:-Math.PI/2, trap:true}], isDroneSpawner: true, maxDrones: 8, dmgMult: 1.8, baseReload: 65 }
 };
 
@@ -813,10 +812,10 @@ const STATS_MAP = ["regen", "maxHp", "bodyDmg", "bulletSpd", "bulletPen", "bulle
 const STATS_LABELS = ["Health Regen", "Max Health", "Body Damage", "Bullet Speed", "Bullet Pen", "Bullet Dmg", "Reload", "Move Speed"];
 
 const SHAPES = {
-    sq: { sides: 4, hp: 15, xp: 15, size: 18, color: '#ffe869' },
-    tr: { sides: 3, hp: 35, xp: 35, size: 20, color: '#fc7677' },
-    pt: { sides: 5, hp: 140, xp: 180, size: 35, color: '#768dfc' },
-    hx: { sides: 6, hp: 700, xp: 2000, size: 45, color: '#00ffff' }
+    sq: { sides: 4, hp: 15, xp: 25, size: 21, color: '#ffe869' },
+    tr: { sides: 3, hp: 35, xp: 75, size: 23, color: '#fc7677' },
+    pt: { sides: 5, hp: 140, xp: 380, size: 32, color: '#768dfc' },
+    hx: { sides: 6, hp: 700, xp: 2500, size: 48, color: '#00ffff' },
 };
 let selectedRegion = "frankfurt";
 let gameState = 'MENU', gameMode = 'FFA', player, entities = [], bullets = [], drones = [], keys = {}, mouse = {x: 0, y: 0}, camera = {x:2000, y:2000}, currentZoom = 1, autoFire = false, autoSpin = false;
@@ -1087,7 +1086,7 @@ function startGame() {
     }
     
     // Progression Setup
-    player.score = getScoreForLevel(45);
+    player.score = 24260;
     player.level = 45;
     player.skillPoints = 44;
 
@@ -1544,7 +1543,7 @@ function updateUI() {
     } else if (player.level >= 45) {
         if(player.type === 'machine') options = ['destroyer'];
         if(player.type === 'sniper') options = ['overseer', 'trapper'];
-        if(player.type === 'flankGuard') options = ['triAngle'];
+        if(player.type === 'flankGuard') options = ['triAngle','hexaTank'];
         if(player.type === 'twin') options = ['tripleShot'];
     }
 
