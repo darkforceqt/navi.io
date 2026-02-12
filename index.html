@@ -372,6 +372,20 @@
     box-sizing: border-box;
     font-size: 12px;
 }
+        #exit-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 45px;
+        height: 45px;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 1001;
+        transition: transform 0.1s;
+        display: none; /* Hidden by default, shown during play */
+    }
+    #exit-btn:hover { transform: scale(1.1); }
+    #exit-btn:active { transform: scale(0.9); }
 .google-btn:hover { background: #f1f1f1; }
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async="" defer=""></script>
@@ -833,6 +847,13 @@ const TEAM_COLORS = {
     GREEN: '#87ff66',  // Bottom Left
     YELLOW: '#e40ee8'  // Top Right
 };
+function exitGame() {
+        if (confirm("Are you sure you want to exit to the menu?")) {
+            endGame();
+            resetToMenu();
+            document.getElementById('exit-btn').style.display = 'none';
+        }
+    }
 // 1. Maze Generation Logic
 function generateMaze() {
     walls = [];
@@ -1159,6 +1180,7 @@ document.querySelectorAll('.custom-option').forEach(opt => {
     opt.addEventListener('click', () => {
         window.preparedSave = null; // Clear preparation on manual change
     });
+    document.getElementById('exit-btn').style.display = 'block';
 });
 function spawnShape() {
     const r = Math.random(); 
@@ -1839,7 +1861,7 @@ function render() {
 let mobileUIEnabled = false;
 const moveJoyData = { active: false, x: 0, y: 0, id: -1, el: document.getElementById('joystick-move') };
 const fireJoyData = { active: false, x: 0, y: 0, id: -1, el: document.getElementById('joystick-fire') };
-
+let fireJoystickActive = false;
 // Helper to update visual knob position
 function updateJoystickVisuals(joyData, touchX, touchY) {
     const rect = joyData.el.getBoundingClientRect();
@@ -1922,6 +1944,8 @@ window.addEventListener('touchmove', e => {
         if (fireJoyData.active && t.identifier === fireJoyData.id) {
             updateJoystickVisuals(fireJoyData, t.clientX, t.clientY);
             if(player) player.angle = Math.atan2(fireJoyData.y, fireJoyData.x);
+            mouse.x = (canvas.width / 2) + (dx * aimDist);
+            mouse.y = (canvas.height / 2) + (dy * aimDist);
         }
     }
 }, { passive: false });
@@ -1962,7 +1986,7 @@ function resetToMenu() {
     document.getElementById('menu-screen').style.display = 'flex';
     document.getElementById('minimap').classList.add('hidden');
     document.getElementById('hud-bottom').classList.add('hidden');
-    document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
+    document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; document.getElementById('exit-btn').style.display = 'none';}
 
 (function() {
     // Logic based on your bot population code
@@ -2023,7 +2047,7 @@ function resetToMenu() {
     };
 })();
     window.networkStats = { frankfurt: 0, atlanta: 0, LA: 0, singapore: 0, tokyo: 0, sydney: 0 };
-    let currentPing = 100; 
+    let currentPing = 0; 
 async function updateGlobalPings() {
     const endpoints = {
         frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
