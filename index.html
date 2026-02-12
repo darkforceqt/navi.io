@@ -382,8 +382,47 @@
         pointer-events: auto;
         z-index: 1001;
         transition: transform 0.1s;
-        display: none; /* Hidden by default, shown during play */
+        display: none; 
     }
+        .custom-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.region-label-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.region-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.stat-players {
+    color: #48bfe0;
+    font-weight: bold;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.stat-ping {
+    color: #73c176; 
+    font-weight: bold;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.stat-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+}
+.select-trigger .stat-ping {
+    display: none !important;
+}
     #exit-btn:hover { transform: scale(1.1); }
     #exit-btn:active { transform: scale(0.9); }
 .google-btn:hover { background: #f1f1f1; }
@@ -437,42 +476,70 @@
             <input type="hidden" id="modeSelect" value="FFA">
         </div>
 
-        <div class="custom-select" id="customRegionSelect">
+    <div class="custom-select" id="customRegionSelect">
     <div class="select-trigger">
         <div class="select-label">
-            <img src="/navi.io/flags/usa.png" class="icon-circle">
-            <span>Atlanta</span>
+            <div class="region-label-group">
+                <img src="/navi.io/flags/usa.png" class="icon-circle">
+                <span>Atlanta</span>
+            </div>
+            <div class="region-stats">
+                 </div>
         </div>
         <i class="arrow"></i>
     </div>
+    
     <div class="custom-options">
         <div class="custom-option" data-value="frankfurt">
-            <img src="/navi.io/flags/frankfurt.png" class="icon-circle"> Frankfurt
+            <div class="region-label-group">
+                <img src="/navi.io/flags/frankfurt.png" class="icon-circle"> <span>Frankfurt</span>
+            </div>
+            <div class="region-stats" id="stats-frankfurt"></div>
         </div>
+        
         <div class="custom-option" data-value="atlanta">
-            <img src="/navi.io/flags/usa.png" class="icon-circle"> Atlanta
+            <div class="region-label-group">
+                <img src="/navi.io/flags/usa.png" class="icon-circle"> <span>Atlanta</span>
+            </div>
+            <div class="region-stats" id="stats-atlanta"></div>
         </div>
+        
         <div class="custom-option" data-value="LA">
-            <img src="/navi.io/flags/usa.png" class="icon-circle"> Los Angeles
+            <div class="region-label-group">
+                <img src="/navi.io/flags/usa.png" class="icon-circle"> <span>Los Angeles</span>
+            </div>
+            <div class="region-stats" id="stats-LA"></div>
         </div>
+        
         <div class="custom-option" data-value="singapore">
-            <img src="/navi.io/flags/sgp.png" class="icon-circle"> Singapore
+            <div class="region-label-group">
+                <img src="/navi.io/flags/sgp.png" class="icon-circle"> <span>Singapore</span>
+            </div>
+            <div class="region-stats" id="stats-singapore"></div>
         </div>
+        
         <div class="custom-option" data-value="tokyo">
-            <img src="/navi.io/flags/tokyo.png" class="icon-circle"> Tokyo
+            <div class="region-label-group">
+                <img src="/navi.io/flags/tokyo.png" class="icon-circle"> <span>Tokyo</span>
+            </div>
+            <div class="region-stats" id="stats-tokyo"></div>
         </div>
+        
         <div class="custom-option" data-value="sydney">
-            <img src="/navi.io/flags/sydney.png" class="icon-circle"> Sydney
+            <div class="region-label-group">
+                <img src="/navi.io/flags/sydney.png" class="icon-circle"> <span>Sydney</span>
+            </div>
+            <div class="region-stats" id="stats-sydney"></div>
         </div>
     </div>
     <input type="hidden" id="regionSelect" value="atlanta">
 </div>
 
-        <input type="text" id="playerName" placeholder="Enter your name" maxlength="18" class="menu-input">
-        <div class="cf-turnstile" 
-            data-sitekey="0x4AAAAAACL3tHxKP9xDWcuv" 
-            data-callback="onTurnstileSuccess">
-        </div>
+    <input type="text" id="playerName" placeholder="Enter your name" maxlength="18" class="menu-input">
+    <div class="cf-turnstile" 
+        data-sitekey="0x4AAAAAACL3tHxKP9xDWcuv" 
+        data-callback="onTurnstileSuccess">
+    </div>
 <button class="spawn-btn" onclick="startGame()">Play!</button>
 <button id="copyPartyBtn" class="spawn-btn show-button" style="background: #444; margin-top: 5px;" onclick="copyPartyLink()">
     Copy Lobby Link
@@ -731,33 +798,25 @@ function setupCustomDropdown(containerId) {
         container.classList.toggle('open');
         e.stopPropagation();
     });
-
-    // Handle selection
-    options.forEach(opt => {
-        opt.addEventListener('click', () => {
-            const val = opt.dataset.value;
-            const content = opt.innerHTML;
-            const className = opt.className;
-
-            hiddenInput.value = val;
-            label.innerHTML = content;
-            label.className = className.replace('custom-option', 'select-label');
-            
-            container.classList.remove('open');
-        });
+options.forEach(opt => {
+    opt.addEventListener('click', () => {
+        const val = opt.dataset.value;
+        const content = opt.innerHTML; 
+        
+        hiddenInput.value = val;
+        label.innerHTML = content;
+        container.classList.remove('open');
+        if(containerId === 'customRegionSelect') {
+            updateRegionDropdownUI();
+        }
     });
+});
 }
-
-// Initialize both
 setupCustomDropdown('modeDropdown');
 setupCustomDropdown('customRegionSelect');
-
-// Close when clicking outside
 window.addEventListener('click', () => {
     document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
 });
-
-// Close dropdown if clicking outside
 window.addEventListener('click', (e) => {
     if (!customSelect.contains(e.target)) {
         customSelect.classList.remove('open');
@@ -2191,6 +2250,40 @@ function resetToMenu() {
 })();
     window.networkStats = { frankfurt: 0, atlanta: 0, LA: 0, singapore: 0, tokyo: 0, sydney: 0 };
     let currentPing = 0; 
+// --- Configuration ---
+const basePlayerCounts = {
+    'atlanta': 192,
+    'frankfurt': 167,
+    'LA': 139,
+    'singapore': 128,
+    'tokyo': 84,
+    'sydney': 30
+};
+
+// Track the lowest ping seen this session
+window.minPings = { 
+    frankfurt: Infinity, 
+    atlanta: Infinity, 
+    LA: Infinity, 
+    singapore: Infinity, 
+    tokyo: Infinity, 
+    sydney: Infinity 
+};
+
+// Track calculated player counts (static per session or slowly updating)
+window.regionPlayerCounts = {};
+
+// Initialize Player Counts once on load
+function initPlayerCounts() {
+    Object.keys(basePlayerCounts).forEach(region => {
+        // Base + Random(0-13)
+        const count = basePlayerCounts[region] + Math.floor(Math.random() * 14);
+        window.regionPlayerCounts[region] = count;
+    });
+}
+initPlayerCounts(); // Run immediately
+
+// --- Updated Ping Function ---
 async function updateGlobalPings() {
     const endpoints = {
         frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
@@ -2204,32 +2297,76 @@ async function updateGlobalPings() {
     const promises = Object.entries(endpoints).map(async ([key, url]) => {
         const start = performance.now();
         try {
-            // Use a small timeout or no-cors fetch to check latency
             await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
             const end = performance.now();
-            const pingValue = (end - start).toFixed(1); // One decimal place
-            window.networkStats[key] = parseFloat(pingValue);
-
-            // Update UI if this is the currently selected region
-            const activeRegion = document.getElementById("regionSelect").value;
-            if (key === activeRegion) {
-                const display = document.getElementById('ping-display');
-                if (display) {
-                    const shortCode = regionShortCodes[key] || key;
-                    display.innerText = `${pingValue} ms ${shortCode}`;
-                }
-                // Update the actual game delay
-                currentPing = Math.round(pingValue);
+            const newPing = parseFloat((end - start).toFixed(1));
+            
+            // Logic: Update if this is the lowest ping we've seen, OR if it's the first time (Infinity)
+            if (newPing < window.minPings[key]) {
+                window.minPings[key] = newPing;
             }
+            
+            // Update network stats for gameplay usage
+            window.networkStats[key] = newPing;
+
         } catch (e) {
-            window.networkStats[key] = 999;
+            // Keep previous value if failed, or set high if unset
+            if(window.minPings[key] === Infinity) window.minPings[key] = 999;
         }
     });
 
     await Promise.all(promises);
+    
+    // After fetching, update the UI and Sort
+    updateRegionDropdownUI();
 }
 
-// Ensure updateGlobalPings is called on an interval (e.g., every 5 seconds)
+function updateRegionDropdownUI() {
+    const optionsContainer = document.querySelector('#customRegionSelect .custom-options');
+    const options = Array.from(document.querySelectorAll('#customRegionSelect .custom-option'));
+
+    options.forEach(opt => {
+        const regionKey = opt.getAttribute('data-value');
+        const statsContainer = opt.querySelector('.region-stats');
+        
+        // 1. Get Values
+        const count = window.regionPlayerCounts[regionKey] || 0;
+        const ping = window.minPings[regionKey];
+        const pingDisplay = (ping === Infinity || ping === 999) ? "..." : Math.round(ping) + "ms";
+
+        // 2. Build HTML
+        statsContainer.innerHTML = `
+            <span class="stat-players">
+                <img src="/navi.io/Assets/player.png" class="stat-icon">
+                ${count}
+            </span>
+            <span class="stat-ping">
+                <img src="/navi.io/Assets/ping.png" class="stat-icon">
+                ${pingDisplay}
+            </span>
+        `;
+    });
+
+    // 3. Sorting: Lowest Ping First
+    options.sort((a, b) => {
+        const keyA = a.getAttribute('data-value');
+        const keyB = b.getAttribute('data-value');
+        return window.minPings[keyA] - window.minPings[keyB];
+    });
+
+    // Re-append in new order
+    options.forEach(opt => optionsContainer.appendChild(opt));
+
+    // 4. Update the Active Trigger Visuals
+    // We need to refresh the trigger because the innerHTML of the selected option changed
+    const currentVal = document.getElementById('regionSelect').value;
+    const currentOpt = options.find(o => o.getAttribute('data-value') === currentVal);
+    
+    if (currentOpt) {
+        const triggerLabel = document.querySelector('#customRegionSelect .select-label');
+        triggerLabel.innerHTML = currentOpt.innerHTML;
+    }
+}
 setInterval(updateGlobalPings, 5000);
 updateGlobalPings(); // Initial call
 window.addEventListener('touchmove', e => {
