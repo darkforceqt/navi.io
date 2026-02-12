@@ -22,7 +22,7 @@
     position: absolute;
     width: 240px;
     height: 240px;
-    background: rgba(205, 205, 205, 0.05);
+    background: rgba(205, 205, 205, 0.5);
     border-radius: 50%;
     pointer-events: none;
     z-index: 10;
@@ -760,13 +760,12 @@ async function loadRegionNames() {
         const response = await fetch('/navi.io/names.json');
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`http error :${response.status}`);
         }
         
         REGION_NAMES = await response.json();
-        console.log("✅ Region names loaded successfully.");
     } catch (error) {
-        console.error("❌ Failed to load region names:", error);
+        console.error("names failed:", error);
     }
 }
 
@@ -777,7 +776,7 @@ let kills = 0;
 let gameStartTime = 0;
 const TANK_TYPES = {
     basic: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}], dmgMult: 1, baseReload: 50 },
-    twin: { barrels: [{x:0, y:-0.7, w:1.8, h:0.6, ang:0}, {x:0, y:0.1, w:1.8, h:0.6, ang:0}], dmgMult: 0.65, baseReload: 25 },
+    twin: { barrels: [{x:0, y:-0.7, w:1.8, h:0.6, ang:0}, {x:0, y:0.1, w:1.8, h:0.6, ang:0}], dmgMult: 0.6, baseReload: 25 },
    tripleShot: { 
         barrels: [
             {x:0, y:-0.3, w:1.8, h:0.6, ang:0}, 
@@ -787,25 +786,25 @@ const TANK_TYPES = {
         dmgMult: 0.6, baseReload: 35 
     },
     spike: { barrels: [], isSpike: true },
-    sniper: { barrels: [{x:0, y:-0.2, w:2.4, h:0.4, ang:0}], dmgMult: 1.2, baseReload: 100 },
-    machine: { barrels: [{x:0, y:-0.5, w:1.7, h:1.0, ang:0}], dmgMult: 0.7, baseReload: 22, spread: 0.65 },
+    sniper: { barrels: [{x:0, y:-0.2, w:2.4, h:0.4, ang:0}], dmgMult: 1.25, baseReload: 100 },
+    machine: { barrels: [{x:0, y:-0.5, w:1.7, h:1.0, ang:0}], dmgMult: 0.75, baseReload: 22, spread: 0.65 },
     flankGuard: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.35, w:1.8, h:0.7, ang: Math.PI}], dmgMult: 1, baseReload: 50 },
     triAngle: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.3, w:1.5, h:0.5, ang: 2.6}, {x:0, y:-0.3, w:1.5, h:0.5, ang: -2.6}], dmgMult: 0.8, baseReload: 25 },
     destroyer: { barrels: [{x:0, y:-0.6, w:1.8, h:1.2, ang:0}], dmgMult: 3.5, baseReload: 150, bulletSize: 2.5 },
     trapper: { barrels: [{x:0, y:-0.4, w:1.2, h:0.8, ang:0, trap:true}], dmgMult: 1.5, baseReload: 80, isTrapper: true },
     hexaTank: { 
     barrels: [
-        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: 0},             
-        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: Math.PI / 3},   
-        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: (2 * Math.PI) / 3}, 
-        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: Math.PI},         
-        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: (4 * Math.PI) / 3},
-        {x: 0, y: -0.35, w: 1.8, h: 0.7, ang: (5 * Math.PI) / 3} 
+        {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: 0},             
+        {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: Math.PI / 3},   
+        {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: (2 * Math.PI) / 3}, 
+        {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: Math.PI},         
+        {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: (4 * Math.PI) / 3},
+        {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: (5 * Math.PI) / 3} 
     ], 
-    dmgMult: 0.75, 
-    baseReload: 45 
+    dmgMult: 0.6, 
+    baseReload: 50 
 },
-    overseer: { barrels: [{x:0, y:-0.3, w:1.2, h:0.6, ang:Math.PI/2, trap:true}, {x:0, y:-0.3, w:1.2, h:0.6, ang:-Math.PI/2, trap:true}], isDroneSpawner: true, maxDrones: 8, dmgMult: 1.8, baseReload: 65 }
+    overseer: { barrels: [{x:0, y:-0.3, w:1.35, h:0.8, ang:Math.PI/2, trap:true}, {x:0, y:-0.3, w:1.35, h:0.8, ang:-Math.PI/2, trap:true}], isDroneSpawner: true, maxDrones: 8, dmgMult: 1.8, baseReload: 65 }
 };
 
 const STATS_MAP = ["regen", "maxHp", "bodyDmg", "bulletSpd", "bulletPen", "bulletDmg", "reload", "moveSpd"];
@@ -817,7 +816,7 @@ const SHAPES = {
     pt: { sides: 5, hp: 140, xp: 380, size: 32, color: '#768dfc' },
     hx: { sides: 6, hp: 700, xp: 2500, size: 48, color: '#00ffff' },
 };
-let selectedRegion = "frankfurt";
+let selectedRegion = "atlanta";
 let gameState = 'MENU', gameMode = 'FFA', player, entities = [], bullets = [], drones = [], keys = {}, mouse = {x: 0, y: 0}, camera = {x:2000, y:2000}, currentZoom = 1, autoFire = false, autoSpin = false;
 const GAME_MODES = {
     FFA: 'FFA',
@@ -1035,7 +1034,7 @@ function startGame() {
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('death-screen').style.display = 'none';
         updateUI();
-        return; // Stop here so it doesn't run the "New Game" code below
+        return; 
     }
     if (gameMode === 'TEAMS' || gameMode === '4TEAMS') {
         if (window.preAssignedTeam) {
@@ -1163,7 +1162,7 @@ document.querySelectorAll('.custom-option').forEach(opt => {
 });
 function spawnShape() {
     const r = Math.random(); 
-    let type = r < 0 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
+    let type = r < 0.05 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
     entities.push({ ...type, x: Math.random()*ARENA_SIZE, y: Math.random()*ARENA_SIZE, vx: 0, vy: 0, currHp: type.hp, maxHp: type.hp, bodyDmg: type.size/3, isShape: true, rot: Math.random()*6, rotSpd: (Math.random()-0.5)*0.05, id: Math.random() });
 }
 
@@ -1544,7 +1543,7 @@ function updateUI() {
         if(player.type === 'machine') options = ['destroyer'];
         if(player.type === 'sniper') options = ['overseer', 'trapper'];
         if(player.type === 'flankGuard') options = ['triAngle','hexaTank'];
-        if(player.type === 'twin') options = ['tripleShot'];
+        if(player.type === 'twin') options = ['tripleShot','hexaTank'];
     }
 
     if(options.length > 0) {
@@ -1899,13 +1898,11 @@ window.addEventListener('touchstart', e => {
                 updateJoystickVisuals(moveJoyData, t.clientX, t.clientY);
             }
         } 
-        // Right side = Fire/Aim
         else {
             if (!fireJoyData.active) {
                 fireJoyData.active = true;
                 fireJoyData.id = t.identifier;
                 updateJoystickVisuals(fireJoyData, t.clientX, t.clientY);
-                // Also update player angle immediately
                 if(player) player.angle = Math.atan2(fireJoyData.y, fireJoyData.x);
             }
         }
@@ -1914,7 +1911,7 @@ window.addEventListener('touchstart', e => {
 
 window.addEventListener('touchmove', e => {
     if (!mobileUIEnabled || gameState !== 'PLAYING') return;
-    e.preventDefault(); // Stop scrolling
+    e.preventDefault(); 
 
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
