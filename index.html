@@ -1185,10 +1185,102 @@ document.querySelectorAll('.custom-option').forEach(opt => {
 });
 function spawnShape() {
     const r = Math.random(); 
-    let type = r < 0.05 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
-    entities.push({ ...type, x: Math.random()*ARENA_SIZE, y: Math.random()*ARENA_SIZE, vx: 0, vy: 0, currHp: type.hp, maxHp: type.hp, bodyDmg: type.size/3, isShape: true, rot: Math.random()*6, rotSpd: (Math.random()-0.5)*0.05, id: Math.random() });
-}
+    let baseType = r < 0.05 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
+    
+    // 5% Chance to be a Sentry
+    const isSentry = Math.random() < 0.05;
 
+    let ent = { 
+        ...baseType, 
+        x: Math.random() * ARENA_SIZE, 
+        y: Math.random() * ARENA_SIZE, 
+        vx: 0, 
+        vy: 0, 
+        rot: Math.random() * 6, 
+        rotSpd: (Math.random() - 0.5) * 0.05, 
+        id: Math.random(),
+        isShape: true 
+    };
+
+    if (isSentry) {
+        ent.isSentry = true;
+        ent.size *= 1.2; 
+        ent.maxHp = baseType.hp * 2; 
+        ent.currHp = ent.maxHp;
+        ent.xp = baseType.xp * 4; 
+        ent.bodyDmg = ent.size / 2; 
+        ent.team = 'NEUTRAL_SENTRY';
+        ent.reload = 0;
+        ent.turretAngle = 0;
+        ent.stats = [0, 0, 0, 6, 5, 5, 6, 0]; 
+        
+        // Hexagons get Twin, others get Basic
+        ent.turretType = (baseType === SHAPES.hx) ? 'twin' : 'basic';
+    } else {
+        ent.currHp = baseType.hp;
+        ent.maxHp = baseType.hp;
+        ent.bodyDmg = baseType.size / 3;
+    }
+
+    entities.push(ent);
+}
+function updateSentryAI(s) {
+    if (!s.isSentry) return;
+
+    let target = null;
+    let minDist = 700; // Attack range
+
+    // Helper to check if a target is in a safe base zone
+    const isInBase = (t) => {
+        const margin = 350; // Safe zone size
+        if (gameMode === 'FFA' || gameMode === 'MAZE') return false; // No bases in FFA/Maze
+        if (gameMode === 'TEAMS') {
+            // Blue (Left), Red (Right)
+            return (t.x < margin && t.team === TEAM_COLORS.BLUE) || 
+                   (t.x > ARENA_SIZE - margin && t.team === TEAM_COLORS.RED);
+        }
+        if (gameMode === '4TEAMS') {
+            // Check 4 corners
+            if (t.x < margin && t.y < margin && t.team === TEAM_COLORS.BLUE) return true;
+            if (t.x > ARENA_SIZE - margin && t.y > ARENA_SIZE - margin && t.team === TEAM_COLORS.RED) return true;
+            if (t.x < margin && t.y > ARENA_SIZE - margin && t.team === TEAM_COLORS.GREEN) return true;
+            if (t.x > ARENA_SIZE - margin && t.y < margin && t.team === TEAM_COLORS.YELLOW) return true;
+        }
+        return false;
+    };
+
+    // Find nearest player or bot (exclude shapes and other sentries)
+    let potentialTargets = [player, ...entities].filter(e => 
+        e && !e.isShape && !e.isSentry && e.hp > 0
+    );
+
+    potentialTargets.forEach(t => {
+        let d = Math.hypot(t.x - s.x, t.y - s.y);
+        // Target if close enough AND not sitting in their spawn base
+        if (d < minDist && !isInBase(t)) {
+            minDist = d;
+            target = t;
+        }
+    });
+
+    if (target) {
+        // Smoothly rotate turret towards target
+        let desiredAng = Math.atan2(target.y - s.y, target.x - s.x);
+        // Simple lerp for rotation
+        let diff = desiredAng - s.turretAngle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        s.turretAngle += diff * 0.1;
+
+        // Shoot
+        fire(s);
+    } else {
+        // Slowly spin turret if idle
+        s.turretAngle += 0.02;
+    }
+    
+    s.reload--;
+}
 function spawnBot() {
     let color;
     const teams = [TEAM_COLORS.BLUE, TEAM_COLORS.RED];
@@ -1388,7 +1480,19 @@ function update() {
     });
 
     entities.forEach(en => { 
-        if(!en.isShape) { updateStatLogic(en); botAI(en); en.reload--; en.x += en.vx; en.y += en.vy; en.vx *= 0.9; en.vy *= 0.9; checkWallCollision(en); constrain(en); } 
+        if(!en.isShape) { 
+            updateStatLogic(en); 
+            botAI(en); 
+            en.reload--; 
+            en.x += en.vx; en.y += en.vy; 
+            en.vx *= 0.9; en.vy *= 0.9; 
+            checkWallCollision(en); 
+            constrain(en); 
+        } else {
+            // Add this for Sentries
+            if(en.isSentry) updateSentryAI(en); 
+        }
+        
         if(player) resolveCollision(player, en);
         entities.forEach(en2 => { if(en !== en2) resolveCollision(en, en2); });
     });
@@ -1470,34 +1574,54 @@ function botAI(b) {
 }
 
 function fire(t) {
-    if(t.reload > 0 || TANK_TYPES[t.type].isDroneSpawner) return;
-    const cfg = TANK_TYPES[t.type];
+    // Sentry Check: Use turretType if it's a sentry, otherwise use standard type
+    const typeKey = t.isSentry ? t.turretType : t.type;
     
-    cfg.barrels.forEach(b => {
-        let finalAng = t.angle + b.ang + (cfg.spread ? (Math.random() - 0.5) * cfg.spread : 0);
-        let recoil = (cfg.bulletSize || 1) * 0.5;
-        t.vx -= Math.cos(finalAng) * recoil;
-        t.vy -= Math.sin(finalAng) * recoil;
+    // Safety check in case type doesn't exist
+    if (!TANK_TYPES[typeKey]) return; 
+    
+    if (t.reload > 0 || TANK_TYPES[typeKey].isDroneSpawner) return;
+    
+    const cfg = TANK_TYPES[typeKey];
 
-        // Requirement: Same size as barrel width (b.h * t.radius) 
-        let bulletRadius = 8 * (cfg.bulletSize || 1);
-        const excludedTanks = ['machineGun', 'machine', 'trapper', 'overseer'];
+    cfg.barrels.forEach(b => {
+        // Use turretAngle for sentries, body angle for tanks
+        const baseAngle = t.isSentry ? t.turretAngle : t.angle;
         
-        if (!excludedTanks.includes(t.type)) {
-            bulletRadius = (b.h * t.radius) / 2;
+        let finalAng = baseAngle + b.ang + (cfg.spread ? (Math.random() - 0.5) * cfg.spread : 0);
+        
+        // Recoil (Only affects tanks, not sentries to keep them stable)
+        if (!t.isSentry) {
+            let recoil = (cfg.bulletSize || 1) * 0.5;
+            t.vx -= Math.cos(finalAng) * recoil;
+            t.vy -= Math.sin(finalAng) * recoil;
+        }
+
+        let bulletRadius = 8 * (cfg.bulletSize || 1);
+        if (!t.isSentry) {
+            // Existing logic for tank bullet size
+            const excludedTanks = ['machineGun', 'machine', 'trapper', 'overseer'];
+            if (!excludedTanks.includes(t.type)) {
+                bulletRadius = (b.h * t.radius) / 2;
+            }
+        } else {
+            // Sentry bullet size
+            bulletRadius = t.size * 0.25; 
         }
 
         bullets.push({
             ownerId: t.id,
-            x: t.x + Math.cos(finalAng) * t.radius * 1.5,
-            y: t.y + Math.sin(finalAng) * t.radius * 1.5,
+            x: t.x + Math.cos(finalAng) * (t.isSentry ? t.size : t.radius) * 1.5,
+            y: t.y + Math.sin(finalAng) * (t.isSentry ? t.size : t.radius) * 1.5,
             vx: Math.cos(finalAng) * (3.5 + t.stats[3] * 0.6),
             vy: Math.sin(finalAng) * (3.5 + t.stats[3] * 0.6),
-            team: t.team,
-            damage: ((15 + t.stats[5] * 8) * cfg.dmgMult) * 2, 
-            hp: (20 + (t.stats[4] * 18)) / 2,                  
+            team: t.team, // 'NEUTRAL_SENTRY' for sentries
+            // Use shape color for sentry bullets
+            color: t.isSentry ? t.color : null, 
+            damage: ((15 + t.stats[5] * 8) * cfg.dmgMult) * (t.isSentry ? 1.5 : 2), 
+            hp: (20 + (t.stats[4] * 18)) / 2,
             life: cfg.isTrapper ? 600 : 90 + t.stats[4] * 18,
-            radius: bulletRadius, 
+            radius: bulletRadius,
             isTrap: cfg.isTrapper
         });
     });
@@ -1756,43 +1880,68 @@ function render() {
             ctx.strokeRect(w.x, w.y, w.w, w.h);
         });
     }
-
-    // Draw Entities (Shapes & Tanks)
     entities.forEach(en => {
         if(en.isShape) { 
             ctx.save(); 
             ctx.translate(en.x, en.y); 
+            ctx.save();
             ctx.rotate(en.rot); 
             ctx.beginPath(); 
             for(let i=0; i<en.sides; i++) ctx.lineTo(en.size*Math.cos(i*2*Math.PI/en.sides), en.size*Math.sin(i*2*Math.PI/en.sides)); 
             ctx.closePath(); 
-            
             ctx.fillStyle = en.color; 
             ctx.fill(); 
-            
-            // --- UPDATED SHAPE STROKE ---
             ctx.strokeStyle = getDarkStroke(en.color);
             ctx.lineWidth = 3; 
-            // ----------------------------
-            
             ctx.stroke(); 
+            ctx.restore(); // Restore from shape rotation
+
+            // 2. Draw Sentry Turret (If applicable)
+            if(en.isSentry) {
+                ctx.rotate(en.turretAngle); // Rotate turret independently
+                ctx.fillStyle = '#999'; 
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 3;
+                
+                const turretCfg = TANK_TYPES[en.turretType];
+                if(turretCfg) {
+                    turretCfg.barrels.forEach(b => {
+                        ctx.save();
+                        ctx.rotate(b.ang);
+                        // Draw barrel relative to shape size
+                        ctx.fillRect(0, b.y * en.size, b.w * en.size * 0.6, b.h * en.size * 0.6);
+                        ctx.strokeRect(0, b.y * en.size, b.w * en.size * 0.6, b.h * en.size * 0.6);
+                        ctx.restore();
+                    });
+                }
+                
+                // Turret Cap
+                ctx.beginPath();
+                ctx.arc(0, 0, en.size * 0.4, 0, Math.PI*2);
+                ctx.fillStyle = en.color; // Cap matches shape color
+                ctx.fill();
+                ctx.stroke();
+            }
+
             ctx.restore(); 
-            if(en.currHp < en.maxHp) { ctx.fillStyle = '#555'; ctx.fillRect(en.x-en.size, en.y+en.size+10, en.size*2, 5); ctx.fillStyle = '#85e37d'; ctx.fillRect(en.x-en.size, en.y+en.size+10, (en.size*2)*(en.currHp/en.maxHp), 5); }
+
+            // Health Bar
+            if(en.currHp < en.maxHp) { 
+                ctx.fillStyle = '#555'; 
+                ctx.fillRect(en.x-en.size, en.y+en.size+10, en.size*2, 5); 
+                ctx.fillStyle = '#85e37d'; 
+                ctx.fillRect(en.x-en.size, en.y+en.size+10, (en.size*2)*(en.currHp/en.maxHp), 5); 
+            }
         } else drawTank(en);
     });
-
-    // Draw Bullets
     bullets.forEach(b => { 
         ctx.beginPath(); 
-        ctx.arc(b.x, b.y, 8, 0, Math.PI*2); 
-        ctx.fillStyle = b.team; 
+        ctx.arc(b.x, b.y, b.radius || 8, 0, Math.PI*2); 
+        ctx.fillStyle = b.color || b.team; 
         ctx.fill(); 
         
-        // --- UPDATED BULLET STROKE ---
-        ctx.strokeStyle = getDarkStroke(b.team);
+        ctx.strokeStyle = getDarkStroke(b.color || b.team);
         ctx.lineWidth = 1;
-        // -----------------------------
-        
         ctx.stroke(); 
     });
 
