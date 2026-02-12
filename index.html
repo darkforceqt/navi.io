@@ -1309,16 +1309,6 @@ function update() {
     const spd = 0.22 + player.stats[7] * 0.03;
     if(keys['KeyW']) player.vy -= spd; if(keys['KeyS']) player.vy += spd;
     if(keys['KeyA']) player.vx -= spd; if(keys['KeyD']) player.vx += spd;
-    // ... inside update() function ...
-    
-    const spd = 0.22 + player.stats[7] * 0.03;
-    
-    // Keyboard Input
-    if(keys['KeyW']) player.vy -= spd; 
-    if(keys['KeyS']) player.vy += spd;
-    if(keys['KeyA']) player.vx -= spd; 
-    if(keys['KeyD']) player.vx += spd;
-
     // ADD THIS: Mobile Joystick Input
     if (mobileUIEnabled && moveJoyData.active) {
         player.vx += moveJoyData.x * spd;
@@ -1847,7 +1837,6 @@ function render() {
     }
     requestAnimationFrame(render);
 }
-JavaScript
 // Mobile State
 let mobileUIEnabled = false;
 const moveJoyData = { active: false, x: 0, y: 0, id: -1, el: document.getElementById('joystick-move') };
