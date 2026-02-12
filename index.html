@@ -1180,7 +1180,7 @@ document.querySelectorAll('.custom-option').forEach(opt => {
     opt.addEventListener('click', () => {
         window.preparedSave = null; // Clear preparation on manual change
     });
-    document.getElementById('exit-btn').style.display = 'block';
+    document.getElementById('exit-btn').hidden = false;
 });
 function spawnShape() {
     const r = Math.random(); 
@@ -1986,7 +1986,7 @@ function resetToMenu() {
     document.getElementById('menu-screen').style.display = 'flex';
     document.getElementById('minimap').classList.add('hidden');
     document.getElementById('hud-bottom').classList.add('hidden');
-    document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; document.getElementById('exit-btn').style.display = 'none';}
+    document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; document.getElementById('exit-btn').hidden = true;}
 
 (function() {
     // Logic based on your bot population code
