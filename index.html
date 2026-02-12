@@ -372,7 +372,7 @@
     box-sizing: border-box;
     font-size: 12px;
 }
-        #exit-btn {
+    #exit-btn {
         position: absolute;
         top: 20px;
         left: 20px;
@@ -1181,7 +1181,7 @@ document.querySelectorAll('.custom-option').forEach(opt => {
     opt.addEventListener('click', () => {
         window.preparedSave = null; // Clear preparation on manual change
     });
-    document.getElementById('exit-btn').hidden = false;
+    document.getElementById('exit-btn').display = 'block';
 });
 function spawnShape() {
     const r = Math.random(); 
@@ -1987,7 +1987,7 @@ function resetToMenu() {
     document.getElementById('menu-screen').style.display = 'flex';
     document.getElementById('minimap').classList.add('hidden');
     document.getElementById('hud-bottom').classList.add('hidden');
-    document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; document.getElementById('exit-btn').hidden = true;}
+    document.getElementById('leaderboard').classList.add('hidden'); gameState = 'MENU'; player = null; document.getElementById('death-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; document.getElementById('exit-btn').display = 'none';}
 
 (function() {
     // Logic based on your bot population code
