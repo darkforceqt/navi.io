@@ -2299,6 +2299,19 @@ async function updateGlobalPings() {
         try {
             await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
             const end = performance.now();
+            const pingValue = (end - start).toFixed(1); // One decimal place
+            window.networkStats[key] = parseFloat(pingValue);
+
+            // Update UI if this is the currently selected region
+            const activeRegion = document.getElementById("regionSelect").value;
+            if (key === activeRegion) {
+                const display = document.getElementById('ping-display');
+                if (display) {
+                    const shortCode = regionShortCodes[key] || key;
+                    display.innerText = `${pingValue} ms ${shortCode}`;
+                }
+                // Update the actual game delay
+                currentPing = Math.round(pingValue);
             const newPing = parseFloat((end - start).toFixed(1));
             
             // Logic: Update if this is the lowest ping we've seen, OR if it's the first time (Infinity)
