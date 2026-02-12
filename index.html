@@ -1598,14 +1598,7 @@ function fire(t) {
         }
 
         let bulletRadius = 8 * (cfg.bulletSize || 1);
-        if (!t.isSentry) {
-            // Existing logic for tank bullet size
-            const excludedTanks = ['machineGun', 'machine', 'trapper', 'overseer'];
-            if (!excludedTanks.includes(t.type)) {
-                bulletRadius = (b.h * t.radius) / 2;
-            }
-        } else {
-            // Sentry bullet size
+        if (t.isSentry) {
             bulletRadius = t.size * 0.25; 
         }
 
