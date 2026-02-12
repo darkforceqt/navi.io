@@ -2283,11 +2283,14 @@ function initPlayerCounts() {
 }
 initPlayerCounts(); // Run immediately
 
-// --- Updated Ping Function ---
 async function updateGlobalPings() {
+    // Initialize global storage if they don't exist
+    window.networkStats = window.networkStats || {};
+    window.minPings = window.minPings || {};
+
     const endpoints = {
         frankfurt: "https://dynamodb.eu-central-1.amazonaws.com",
-        atlanta: "https://dynamodb.us-east-1.amazonaws.com",
+        atlanta: "https://dynamodb.us-east-2.amazonaws.com",
         LA: "https://dynamodb.us-west-2.amazonaws.com",
         singapore: "https://dynamodb.ap-southeast-1.amazonaws.com",
         tokyo: "https://dynamodb.ap-northeast-1.amazonaws.com",
@@ -2297,41 +2300,43 @@ async function updateGlobalPings() {
     const promises = Object.entries(endpoints).map(async ([key, url]) => {
         const start = performance.now();
         try {
-            await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
+            // Using 'head' can be even lighter than a full GET
+            await fetch(url, { mode: 'no-cors', cache: 'no-cache', method: 'HEAD' });
             const end = performance.now();
-            const pingValue = (end - start).toFixed(1); // One decimal place
-            window.networkStats[key] = parseFloat(pingValue);
+            const pingValue = parseFloat((end - start).toFixed(1));
 
-            // Update UI if this is the currently selected region
-            const activeRegion = document.getElementById("regionSelect").value;
+            // Update stats
+            window.networkStats[key] = pingValue;
+            
+            // Record the best (minimum) ping for this session
+            if (!window.minPings[key] || pingValue < window.minPings[key]) {
+                window.minPings[key] = pingValue;
+            }
+
+            // UI Update for the active selection
+            const activeRegion = document.getElementById("regionSelect")?.value;
             if (key === activeRegion) {
                 const display = document.getElementById('ping-display');
                 if (display) {
-                    const shortCode = regionShortCodes[key] || key;
+                    const shortCode = (typeof regionShortCodes !== 'undefined' && regionShortCodes[key]) || key;
                     display.innerText = `${pingValue} ms ${shortCode}`;
                 }
-                // Update the actual game delay
-                currentPing = Math.round(pingValue);
-            const newPing = parseFloat((end - start).toFixed(1));
-            
-            // Logic: Update if this is the lowest ping we've seen, OR if it's the first time (Infinity)
-            if (newPing < window.minPings[key]) {
-                window.minPings[key] = newPing;
+                // Update global game delay variable
+                if (typeof currentPing !== 'undefined') currentPing = Math.round(pingValue);
             }
-            
-            // Update network stats for gameplay usage
-            window.networkStats[key] = newPing;
 
         } catch (e) {
-            // Keep previous value if failed, or set high if unset
-            if(window.minPings[key] === Infinity) window.minPings[key] = 999;
+            console.error(`Ping failed for ${key}:`, e);
+            window.networkStats[key] = 999;
+            if (!window.minPings[key]) window.minPings[key] = 999;
         }
     });
 
     await Promise.all(promises);
     
-    // After fetching, update the UI and Sort
-    updateRegionDropdownUI();
+    if (typeof updateRegionDropdownUI === 'function') {
+        updateRegionDropdownUI();
+    }
 }
 
 function updateRegionDropdownUI() {
