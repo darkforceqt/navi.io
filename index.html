@@ -393,6 +393,15 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="ui-layer">
+        <div id="mobile-controls" style="display: none;">
+        <div id="joystick-move" class="joystick-container" style="bottom: 50px; left: 50px;">
+            <div class="joystick-knob"></div>
+        </div>
+        <div id="joystick-fire" class="joystick-container" style="bottom: 50px; right: 50px;">
+            <div class="joystick-knob"></div>
+        </div>
+    </div>
+    </div>
 
 <div id="coin-display" class="hidden" style="position: absolute; top: 20px; left: 20px; color: #ffd700; font-weight: bold; font-size: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); pointer-events: none;">
     🪙 <span id="user-coins">0</span>
@@ -1300,6 +1309,24 @@ function update() {
     const spd = 0.22 + player.stats[7] * 0.03;
     if(keys['KeyW']) player.vy -= spd; if(keys['KeyS']) player.vy += spd;
     if(keys['KeyA']) player.vx -= spd; if(keys['KeyD']) player.vx += spd;
+    // ... inside update() function ...
+    
+    const spd = 0.22 + player.stats[7] * 0.03;
+    
+    // Keyboard Input
+    if(keys['KeyW']) player.vy -= spd; 
+    if(keys['KeyS']) player.vy += spd;
+    if(keys['KeyA']) player.vx -= spd; 
+    if(keys['KeyD']) player.vx += spd;
+
+    // ADD THIS: Mobile Joystick Input
+    if (mobileUIEnabled && moveJoyData.active) {
+        player.vx += moveJoyData.x * spd;
+        player.vy += moveJoyData.y * spd;
+    }
+    if (mobileUIEnabled && fireJoyData.active) {
+        fire(player);
+    }
     player.vx *= 0.9; player.vy *= 0.9; player.x += player.vx; player.y += player.vy;
     checkWallCollision(player); // Add this line
     constrain(player);
@@ -1820,54 +1847,96 @@ function render() {
     }
     requestAnimationFrame(render);
 }
-// --- Mobile Control State ---
+JavaScript
+// Mobile State
 let mobileUIEnabled = false;
-// We use two separate objects for the two joysticks
-let moveJoystick = { active: false, x: 0, y: 0, originX: 0, originY: 0, id: -1 };
-let fireJoystick = { active: false, x: 0, y: 0, originX: 0, originY: 0, id: -1 };
-window.addEventListener('touchstart', e => {
-    if (typeof gameState !== 'undefined' && gameState !== 'PLAYING') return;
-    mobileUIEnabled = true;
-    if (!mobileUIEnabled) return;
+const moveJoyData = { active: false, x: 0, y: 0, id: -1, el: document.getElementById('joystick-move') };
+const fireJoyData = { active: false, x: 0, y: 0, id: -1, el: document.getElementById('joystick-fire') };
+
+// Helper to update visual knob position
+function updateJoystickVisuals(joyData, touchX, touchY) {
+    const rect = joyData.el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
     
+    // Calculate offset
+    let dx = touchX - centerX;
+    let dy = touchY - centerY;
+    
+    // Limit distance to joystick radius (approx 60px based on your CSS)
+    const distance = Math.hypot(dx, dy);
+    const maxDist = 40; // Limit knob movement
+    
+    if (distance > maxDist) {
+        dx = (dx / distance) * maxDist;
+        dy = (dy / distance) * maxDist;
+    }
+
+    // Move the knob (child element)
+    const knob = joyData.el.querySelector('.joystick-knob');
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+    // Store normalized values (-1 to 1) for game logic
+    joyData.x = dx / maxDist;
+    joyData.y = dy / maxDist;
+}
+
+function resetJoystick(joyData) {
+    joyData.active = false;
+    joyData.x = 0;
+    joyData.y = 0;
+    joyData.id = -1;
+    const knob = joyData.el.querySelector('.joystick-knob');
+    knob.style.transform = `translate(-50%, -50%)`;
+}
+
+// Touch Event Listeners
+window.addEventListener('touchstart', e => {
+    // Enable mobile UI on first touch
+    if (!mobileUIEnabled) {
+        mobileUIEnabled = true;
+        document.getElementById('mobile-controls').style.display = 'block';
+    }
+
+    if (gameState !== 'PLAYING') return;
+
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
         
-        // Left side of screen = Movement
+        // Left side = Move
         if (t.clientX < window.innerWidth / 2) {
-            if (!moveJoystick.active) {
-                moveJoystick.active = true;
-                moveJoystick.id = t.identifier;
-                moveJoystick.originX = moveJoystick.x = t.clientX;
-                moveJoystick.originY = moveJoystick.y = t.clientY;
+            if (!moveJoyData.active) {
+                moveJoyData.active = true;
+                moveJoyData.id = t.identifier;
+                updateJoystickVisuals(moveJoyData, t.clientX, t.clientY);
             }
         } 
-        // Right side of screen = Firing
+        // Right side = Fire/Aim
         else {
-            if (!fireJoystick.active) {
-                fireJoystick.active = true;
-                fireJoystick.id = t.identifier;
-                fireJoystick.originX = fireJoystick.x = t.clientX;
-                fireJoystick.originY = fireJoystick.y = t.clientY;
+            if (!fireJoyData.active) {
+                fireJoyData.active = true;
+                fireJoyData.id = t.identifier;
+                updateJoystickVisuals(fireJoyData, t.clientX, t.clientY);
+                // Also update player angle immediately
+                if(player) player.angle = Math.atan2(fireJoyData.y, fireJoyData.x);
             }
         }
     }
 }, { passive: false });
 
 window.addEventListener('touchmove', e => {
-    mobileUIEnabled = true;
-    if (!mobileUIEnabled) return;
-    e.preventDefault(); // Prevents scrolling while playing
+    if (!mobileUIEnabled || gameState !== 'PLAYING') return;
+    e.preventDefault(); // Stop scrolling
 
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
-        if (moveJoystick.active && t.identifier === moveJoystick.id) {
-            moveJoystick.x = t.clientX;
-            moveJoystick.y = t.clientY;
+        
+        if (moveJoyData.active && t.identifier === moveJoyData.id) {
+            updateJoystickVisuals(moveJoyData, t.clientX, t.clientY);
         }
-        if (fireJoystick.active && t.identifier === fireJoystick.id) {
-            fireJoystick.x = t.clientX;
-            fireJoystick.y = t.clientY;
+        if (fireJoyData.active && t.identifier === fireJoyData.id) {
+            updateJoystickVisuals(fireJoyData, t.clientX, t.clientY);
+            if(player) player.angle = Math.atan2(fireJoyData.y, fireJoyData.x);
         }
     }
 }, { passive: false });
@@ -1875,16 +1944,8 @@ window.addEventListener('touchmove', e => {
 window.addEventListener('touchend', e => {
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
-        if (moveJoystick.id === t.identifier) moveJoystick.active = false;
-        if (fireJoystick.id === t.identifier) fireJoystick.active = false;
-    }
-});
-
-window.addEventListener('touchcancel', e => {
-    for (let i = 0; i < e.changedTouches.length; i++) {
-        const t = e.changedTouches[i];
-        if (moveJoystick.id === t.identifier) moveJoystick.active = false;
-        if (fireJoystick.id === t.identifier) fireJoystick.active = false;
+        if (moveJoyData.id === t.identifier) resetJoystick(moveJoyData);
+        if (fireJoyData.id === t.identifier) resetJoystick(fireJoyData);
     }
 });
 const regionShortCodes = {
