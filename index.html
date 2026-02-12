@@ -1188,7 +1188,7 @@ function spawnShape() {
     let baseType = r < 0.05 ? SHAPES.hx : (r < 0.2 ? SHAPES.pt : (r < 0.35 ? SHAPES.tr : SHAPES.sq));
     
     // 5% Chance to be a Sentry
-    const isSentry = Math.random() < 0.05;
+    const isSentry = Math.random() < 0.002;
 
     let ent = { 
         ...baseType, 
@@ -1207,7 +1207,7 @@ function spawnShape() {
         ent.size *= 1.2; 
         ent.maxHp = baseType.hp * 2; 
         ent.currHp = ent.maxHp;
-        ent.xp = baseType.xp * 4; 
+        ent.xp = baseType.xp * 50;
         ent.bodyDmg = ent.size / 2; 
         ent.team = 'NEUTRAL_SENTRY';
         ent.reload = 0;
