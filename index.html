@@ -867,17 +867,29 @@ const TANK_TYPES = {
     destroyer: { barrels: [{x:0, y:-0.6, w:1.8, h:1.2, ang:0}], dmgMult: 3.5, baseReload: 150, bulletSize: 2.5 },
     trapper: { barrels: [{x:0, y:-0.4, w:1.2, h:0.8, ang:0, trap:true}], dmgMult: 1.5, baseReload: 80, isTrapper: true },
     hexaTank: { 
-    barrels: [
+       barrels: [
         {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: 0},             
         {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: Math.PI / 3},   
         {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: (2 * Math.PI) / 3}, 
         {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: Math.PI},         
         {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: (4 * Math.PI) / 3},
         {x: 0, y: -0.35, w: 1.7, h: 0.65, ang: (5 * Math.PI) / 3} 
-    ], 
+       ], 
     dmgMult: 0.6, 
     baseReload: 50 
-},
+    },
+    streamliner: { 
+    barrels: [
+        {x:0, y:-0.3, w:2.2, h:0.4, ang:0},
+        {x:0, y:-0.28, w:2.0, h:0.4, ang:0},
+        {x:0, y:-0.26, w:1.8, h:0.4, ang:0},
+        {x:0, y:-0.24, w:1.6, h:0.4, ang:0},
+        {x:0, y:-0.22, w:1.4, h:0.4, ang:0}
+    ], 
+    dmgMult: 0.2, 
+    baseReload: 10, // Extremely fast
+    spread: 0.1
+}
     overseer: { barrels: [{x:0, y:-0.3, w:1.35, h:0.8, ang:Math.PI/2, trap:true}, {x:0, y:-0.3, w:1.35, h:0.8, ang:-Math.PI/2, trap:true}], isDroneSpawner: true, maxDrones: 8, dmgMult: 1.8, baseReload: 65 }
 };
 
@@ -1739,7 +1751,7 @@ function updateUI() {
     if(player.level >= 15 && player.type === 'basic') {
         options = ['twin', 'sniper', 'machine', 'flankGuard', 'spike'];
     } else if (player.level >= 45) {
-        if(player.type === 'machine') options = ['destroyer'];
+        if(player.type === 'machine') options = ['destroyer', 'streamliner'];
         if(player.type === 'sniper') options = ['overseer', 'trapper'];
         if(player.type === 'flankGuard') options = ['triAngle','hexaTank'];
         if(player.type === 'twin') options = ['tripleShot','hexaTank'];
