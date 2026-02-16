@@ -848,7 +848,26 @@ loadRegionNames();
 
 let kills = 0;
 let gameStartTime = 0;
-const TANK_TYPES = {
+
+
+const STATS_MAP = ["regen", "maxHp", "bodyDmg", "bulletSpd", "bulletPen", "bulletDmg", "reload", "moveSpd"];
+const STATS_LABELS = ["Health Regen", "Max Health", "Body Damage", "Bullet Speed", "Bullet Pen", "Bullet Dmg", "Reload", "Move Speed"];
+
+const SHAPES = {
+    sq: { sides: 4, hp: 15, xp: 25, size: 21, color: '#ffe869' },
+    tr: { sides: 3, hp: 35, xp: 75, size: 23, color: '#fc7677' },
+    pt: { sides: 5, hp: 140, xp: 380, size: 32, color: '#768dfc' },
+    hx: { sides: 6, hp: 700, xp: 2500, size: 48, color: '#00ffff' },
+};
+let selectedRegion = "atlanta";
+let gameState = 'MENU', gameMode = 'FFA', player, entities = [], bullets = [], drones = [], keys = {}, mouse = {x: 0, y: 0}, camera = {x:2000, y:2000}, currentZoom = 1, autoFire = false, autoSpin = false;
+const GAME_MODES = {
+    FFA: 'FFA',
+    TEAMS: 'TEAMS',
+    TEAMS_4: '4TEAMS',
+    MAZE: 'MAZE'
+};
+    const TANK_TYPES = {
     basic: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}], dmgMult: 1, baseReload: 50 },
     twin: { barrels: [{x:0, y:-0.7, w:1.8, h:0.6, ang:0}, {x:0, y:0.1, w:1.8, h:0.6, ang:0}], dmgMult: 0.6, baseReload: 25 },
    tripleShot: { 
@@ -864,7 +883,30 @@ const TANK_TYPES = {
     machine: { barrels: [{x:0, y:-0.5, w:1.7, h:1.0, ang:0}], dmgMult: 0.75, baseReload: 22, spread: 0.65 },
     flankGuard: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.35, w:1.8, h:0.7, ang: Math.PI}], dmgMult: 1, baseReload: 50 },
     triAngle: { barrels: [{x:0, y:-0.35, w:1.8, h:0.7, ang:0}, {x:0, y:-0.3, w:1.5, h:0.5, ang: 2.6}, {x:0, y:-0.3, w:1.5, h:0.5, ang: -2.6}], dmgMult: 0.8, baseReload: 25 },
-    destroyer: { barrels: [{x:0, y:-0.6, w:1.8, h:1.2, ang:0}], dmgMult: 3.5, baseReload: 150, bulletSize: 2.5 },
+    destroyer: { 
+        barrels: [
+            // 15 identical barrels stacked on top of each other
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0},
+            {x:0, y:-0.6, w:1.8, h:1.2, ang:0}
+        ], 
+        // dmgMult lowered to 0.25 (15 * 0.25 = 3.75 total dmg, slightly more than the original 3.5)
+        dmgMult: 0.25, 
+        baseReload: 150, 
+        bulletSize: 2.5,
+    },
     trapper: { barrels: [{x:0, y:-0.4, w:1.2, h:0.8, ang:0, trap:true}], dmgMult: 1.5, baseReload: 80, isTrapper: true },
     hexaTank: { 
        barrels: [
@@ -903,24 +945,6 @@ const TANK_TYPES = {
         bSpeedMult: 1.3   // Slightly faster bullets to feel like a "blast"
     },
     overseer: { barrels: [{x:0, y:-0.3, w:1.35, h:0.8, ang:Math.PI/2, trap:true}, {x:0, y:-0.3, w:1.35, h:0.8, ang:-Math.PI/2, trap:true}], isDroneSpawner: true, maxDrones: 8, dmgMult: 1.8, baseReload: 65 }
-};
-
-const STATS_MAP = ["regen", "maxHp", "bodyDmg", "bulletSpd", "bulletPen", "bulletDmg", "reload", "moveSpd"];
-const STATS_LABELS = ["Health Regen", "Max Health", "Body Damage", "Bullet Speed", "Bullet Pen", "Bullet Dmg", "Reload", "Move Speed"];
-
-const SHAPES = {
-    sq: { sides: 4, hp: 15, xp: 25, size: 21, color: '#ffe869' },
-    tr: { sides: 3, hp: 35, xp: 75, size: 23, color: '#fc7677' },
-    pt: { sides: 5, hp: 140, xp: 380, size: 32, color: '#768dfc' },
-    hx: { sides: 6, hp: 700, xp: 2500, size: 48, color: '#00ffff' },
-};
-let selectedRegion = "atlanta";
-let gameState = 'MENU', gameMode = 'FFA', player, entities = [], bullets = [], drones = [], keys = {}, mouse = {x: 0, y: 0}, camera = {x:2000, y:2000}, currentZoom = 1, autoFire = false, autoSpin = false;
-const GAME_MODES = {
-    FFA: 'FFA',
-    TEAMS: 'TEAMS',
-    TEAMS_4: '4TEAMS',
-    MAZE: 'MAZE'
 };
 const getScoreForLevel = (lvl) => Math.floor(20 * Math.pow(lvl, 1.85));
 const formatScore = (num) => Math.floor(num).toLocaleString();
