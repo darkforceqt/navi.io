@@ -1534,6 +1534,24 @@ function update() {
         player.vx += moveJoyData.x * spd;
         player.vy += moveJoyData.y * spd;
     }
+    // --- START NEW DRONE MOBILE LOGIC ---
+    if (mobileUIEnabled && fireJoyData.active) {
+        const crosshairSpeed = 25; // How fast the crosshair moves
+        
+        // Move the "mouse" (virtual crosshair) based on joystick direction
+        mouse.x += fireJoyData.x * crosshairSpeed;
+        mouse.y += fireJoyData.y * crosshairSpeed;
+
+        // Clamp to screen boundaries so it doesn't get lost
+        mouse.x = Math.max(0, Math.min(canvas.width, mouse.x));
+        mouse.y = Math.max(0, Math.min(canvas.height, mouse.y));
+        
+        // Update player angle to face the crosshair
+        if (player) {
+             player.angle = Math.atan2((mouse.y - canvas.height/2), (mouse.x - canvas.width/2));
+        }
+    }
+    // --- END NEW DRONE MOBILE LOGIC ---
     if (mobileUIEnabled && fireJoyData.active) {
         fire(player);
     }
@@ -2066,8 +2084,26 @@ function render() {
     });
 
     if(gameState === 'PLAYING' && player) drawTank(player);
-    ctx.restore();
+    ctx.restore()
 
+    // --- NEW CROSSHAIR RENDER ---
+    if (mobileUIEnabled && gameState === 'PLAYING' && player) {
+        // Draw crosshair at the virtual mouse position
+        ctx.save();
+        ctx.translate(mouse.x, mouse.y);
+        
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 0, 0, 0.6)"; // Reddish transparent
+        ctx.lineWidth = 3;
+        
+        // Draw Reticle
+        ctx.arc(0, 0, 15, 0, Math.PI * 2); // Circle
+        ctx.moveTo(-20, 0); ctx.lineTo(20, 0); // Horizontal line
+        ctx.moveTo(0, -20); ctx.lineTo(0, 20); // Vertical line
+        
+        ctx.stroke();
+        ctx.restore();
+    }
     // Minimap Rendering
     if (gameState === 'PLAYING' && player) {
         mctx.clearRect(0, 0, 150, 150);
@@ -2191,15 +2227,13 @@ window.addEventListener('touchmove', e => {
         if (moveJoyData.active && t.identifier === moveJoyData.id) {
             updateJoystickVisuals(moveJoyData, t.clientX, t.clientY);
         }
+        
         if (fireJoyData.active && t.identifier === fireJoyData.id) {
             updateJoystickVisuals(fireJoyData, t.clientX, t.clientY);
-            if(player) player.angle = Math.atan2(fireJoyData.y, fireJoyData.x);
-            mouse.x = (canvas.width / 2) + (dx * aimDist);
-            mouse.y = (canvas.height / 2) + (dy * aimDist);
+            // We only update visuals here. Movement logic is now in update()
         }
     }
 }, { passive: false });
-
 window.addEventListener('touchend', e => {
     for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
