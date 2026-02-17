@@ -1093,7 +1093,7 @@ function createTank(x, y, color, name, isBot = false) {
     let t = { id: Math.random(), x, y, color, name, isBot, radius: 20, level: 1, score: 0, skillPoints: 0, vx: 0, vy: 0, angle: 0, hp: 100, maxHp: 100, bodyDmg: 2, type: 'basic', reload: 0, stats: Array(8).fill(0), team: color };
     
     if(isBot) { 
-        t.score = 100 + Math.random() * 2000; 
+        t.score = 23570 + Math.random() * 15600; 
         checkLvl(t); 
         
         const bulletStats = [3, 4, 5, 6]; 
