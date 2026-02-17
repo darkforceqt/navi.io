@@ -1534,24 +1534,22 @@ function update() {
         player.vx += moveJoyData.x * spd;
         player.vy += moveJoyData.y * spd;
     }
-    // --- START NEW DRONE MOBILE LOGIC ---
     if (mobileUIEnabled && fireJoyData.active) {
-        const crosshairSpeed = 25; // How fast the crosshair moves
+        const cursorSpeed = 15; // Adjust this number for sensitivity
         
-        // Move the "mouse" (virtual crosshair) based on joystick direction
-        mouse.x += fireJoyData.x * crosshairSpeed;
-        mouse.y += fireJoyData.y * crosshairSpeed;
+        // Move the "Virtual Mouse" based on joystick angle/distance
+        mouse.x += fireJoyData.x * cursorSpeed;
+        mouse.y += fireJoyData.y * cursorSpeed;
 
-        // Clamp to screen boundaries so it doesn't get lost
+        // Clamp mouse to screen boundaries so you don't lose it
         mouse.x = Math.max(0, Math.min(canvas.width, mouse.x));
         mouse.y = Math.max(0, Math.min(canvas.height, mouse.y));
         
-        // Update player angle to face the crosshair
+        // Make the tank face the crosshair
         if (player) {
              player.angle = Math.atan2((mouse.y - canvas.height/2), (mouse.x - canvas.width/2));
         }
     }
-    // --- END NEW DRONE MOBILE LOGIC ---
     if (mobileUIEnabled && fireJoyData.active) {
         fire(player);
     }
