@@ -1535,7 +1535,7 @@ function update() {
         player.vy += moveJoyData.y * spd;
     }
     if (mobileUIEnabled && fireJoyData.active) {
-        const cursorSpeed = 15; // Adjust this number for sensitivity
+        const cursorSpeed = 915; // Adjust this number for sensitivity
         
         // Move the "Virtual Mouse" based on joystick angle/distance
         mouse.x += fireJoyData.x * cursorSpeed;
@@ -2091,11 +2091,11 @@ function render() {
         ctx.translate(mouse.x, mouse.y);
         
         ctx.beginPath();
-        ctx.strokeStyle = "rgba(255, 0, 0, 0.6)"; // Reddish transparent
+        ctx.strokeStyle = "rgba(0, 0, 0, 0)"; // Reddish transparent
         ctx.lineWidth = 3;
         
         // Draw Reticle
-        ctx.arc(0, 0, 15, 0, Math.PI * 2); // Circle
+       // ctx.arc(0, 0, 15, 0, Math.PI * 2); // Circle
         ctx.moveTo(-20, 0); ctx.lineTo(20, 0); // Horizontal line
         ctx.moveTo(0, -20); ctx.lineTo(0, 20); // Vertical line
         
